@@ -33,13 +33,13 @@ set(SOURCES
   ${CMAKE_SOURCE_DIR}/obc_gs_interface/common/obc_gs_crc.c
 )
 
-list(APPEND INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/interface-libs/libcorrect/include)
+list(APPEND INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/interface_libs/libcorrect/include)
 
 add_library(${OBC_GS_INTERFACE_LIB_NAME} SHARED ${SOURCES})
 
 target_include_directories(${OBC_GS_INTERFACE_LIB_NAME} PUBLIC ${INCLUDE_DIRS})
 
-add_subdirectory(interface-libs)
+add_subdirectory(interface_libs)
 
 target_link_libraries(${OBC_GS_INTERFACE_LIB_NAME} PRIVATE
     tiny-aes
