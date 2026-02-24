@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
-project(interfaces)
+if(NOT PROJECT_NAME)
+  project(interfaces)
+endif()
 
 set(OBC_GS_INTERFACE_LIB_NAME obc-gs-interface)
 
