@@ -8,7 +8,7 @@ set(OBC_GS_INTERFACE_LIB_NAME obc-gs-interface)
 set(INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/common
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/commands
-  ${CMAKE_CURRENT_SOURCE_DIR}}/obc_gs_interface/telemetry
+  ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/telemetry
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/aes128
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/ax25
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/fec
