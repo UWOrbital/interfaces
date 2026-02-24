@@ -37,7 +37,11 @@ set(SOURCES
 
 list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/interface_libs/libcorrect/include)
 
-add_library(${OBC_GS_INTERFACE_LIB_NAME} SHARED ${SOURCES})
+if(NOT ${CMAKE_BUILD_TYPE})
+  add_library(${OBC_GS_INTERFACE_LIB_NAME} STATIC ${SOURCES})
+else()
+  add_library(${OBC_GS_INTERFACE_LIB_NAME} SHARED ${SOURCES})
+endif()
 
 target_include_directories(${OBC_GS_INTERFACE_LIB_NAME} PUBLIC ${INCLUDE_DIRS})
 
