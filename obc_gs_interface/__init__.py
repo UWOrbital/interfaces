@@ -8,5 +8,5 @@ else:
     extension = "so"
 
 # The shared object file we are using the access the c functions via ctypes
-path = (Path(__file__).parent / f"../../build_gs/interfaces/libobc-gs-interface.{extension}").resolve()
+path = (Path(__file__).parent / f"../build/libobc-gs-interface.{extension}").resolve()
 interface = CDLL(str(path))
