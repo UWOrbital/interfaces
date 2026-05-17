@@ -19,7 +19,7 @@ from interfaces.obc_gs_interface.commands.python.command_response_callbacks impo
 from interfaces.obc_gs_interface.commands.python.command_response_classes import CmdRes
 from serial import PARITY_NONE, STOPBITS_TWO, Serial
 
-from obc_utils.encode_decode import CommsPipeline
+from utils.encode_decode import CommsPipeline
 
 # This is a constant value set in the python and OBC side as to what length of I Frame the OBC will be waiting to
 # receive. This must be followed or the obc will not function as expected
