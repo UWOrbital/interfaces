@@ -158,6 +158,7 @@ static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg
   // No data to pack
 }
 
+// CMD_CAPTURE_IMAGE
 static void packCaptureImageCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   // No data to pack
 }

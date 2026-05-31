@@ -221,12 +221,12 @@ def create_cmd_i2c_probe(unixtime_of_execution: int | None = None) -> CmdMsg:
 
 def create_cmd_capture_image(unixtime_of_execution: int | None = None) -> CmdMsg:
     """
-    Function to create a CmdMsg structure for CMD_CAPTURE_IMAGE
+    Function to create a CmdMsg structure for CMD_I2C_PROBE
 
     :param unixtime_of_execution: A time of when to execute a certain event,
-                                    by default, it is set to None (i.e. a specific
-                                    time is not needed)
-    :return: CmdMsg structure for CMD_CAPTURE_IMAGE
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_I2C_PROBE
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_CAPTURE_IMAGE
