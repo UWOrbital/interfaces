@@ -98,6 +98,35 @@ class CmdI2CProbeRes(CmdRes):
             formatted_string += " " + str(address) + " |"
 
         return formatted_string
+    
+@dataclass
+class CmdCC1120RegisterReadRes(CmdRes):
+    """
+    Class for storing the response to CMD_CC1120_REGISTER_READ
+    
+    :param standard_registers: Dictionary where each entry represents a different register's value - key stores register name, value stores register value
+    :param extended_registers: Dictionary where each entry represents a different register in extended address space - key stores register name, value stores register value
+    """
+
+    standard_registers: dict[str, int]
+    extended_registers: dict[str, int]
+    
+    def __str__(self) -> str:
+        """
+        Overriding the str method for a better representation of what's happening
+        """
+        formatted_string = super().__str__()
+        formatted_string += "Standard register configs: "
+        for name, value in self.standard_registers.items():
+            formatted_string += f"  {name}: 0x{value:02X}\n"
+
+        formatted_string += "Extended register configs: "
+        for name, value in self.extended_registers.items():
+            formatted_string += f"  {name}: 0x{value:02X}\n"
+
+        return formatted_string
+
+
 
 
 if __name__ == "__main__":

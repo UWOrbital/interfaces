@@ -159,7 +159,8 @@ class CmdCallbackId(IntEnum):
     CMD_DOWNLOAD_DATA = 10
     CMD_VERIFY_CRC = 11
     CMD_I2C_PROBE = 12
-    NUM_CMD_CALLBACKS = 13
+    CMD_CC1120_REGISTER_READ = 13
+    NUM_CMD_CALLBACKS = 14
 
 
 # Path to File: interfaces/obc_gs_interface/commands/obc_gs_commands_response.h

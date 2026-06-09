@@ -64,6 +64,7 @@ static const pack_func_t packFns[] = {
     [CMD_ERASE_APP] = packEraseAppCmdData,
     [CMD_VERIFY_CRC] = packVerifyCrcCmdData,
     [CMD_I2C_PROBE] = packI2CProbeCmdData,
+    [CMD_CC1120_REGISTER_READ] = packCC1120RegisterReadCmdData,
     // Add more functions for other commands as needed
 };
 
