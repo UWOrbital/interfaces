@@ -1,4 +1,4 @@
-from ctypes import CDLL, WinDLL
+from ctypes import CDLL
 from pathlib import Path
 from sys import platform
 
@@ -32,7 +32,4 @@ for candidate in candidates:
 if path is None:
     raise FileNotFoundError(f"Could not find {lib_name} in any of: {[str(c) for c in candidates]}")
 
-if platform == "win32":
-    interface = WinDLL(str(path))
-else:
-    interface = CDLL(str(path))
+interface = CDLL(str(path))
