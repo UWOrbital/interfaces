@@ -38,4 +38,6 @@ typedef enum {
 
   TELEM_NUM_CSP_PACKETS_RCVD,
   TELEM_PONG,
+  TELEM_ARO_KEY_IS_SET,
+  TELEM_ARO_REMAINING_IMAGE_REQUESTS
 } telemetry_data_id_t;
