@@ -3,6 +3,7 @@ from ctypes import (
     Structure,
     Union,
     c_bool,
+    c_float,
     c_uint,
     c_uint8,
     c_uint16,
@@ -92,6 +93,52 @@ class CmdMsg(Structure):
         else:
             super().__init__(_U(), c_uint32(unixtime_of_execution), c_bool(True), c_uint())
 
+class _TelemU(Union):
+    """
+    Union class needed to create the TelemetryData Class
+    """
+
+    _fields_ = [
+        ("cc1120Temp", c_float),
+        ("commsCustomTransceiverTemp", c_float),
+        ("obcTemp", c_float),
+        ("adcsMagBoardTemp", c_float),
+        ("adcsSensorBoardTemp", c_float),
+        ("epsBoardTemp", c_float),
+        ("solarPanel1Temp", c_float),
+        ("solarPanel2Temp", c_float),
+        ("solarPanel3Temp", c_float),
+        ("solarPanel4Temp", c_float),
+
+        ("epsComms5vCurrent", c_float),
+        ("epsComms3v3Current", c_float),
+        ("epsMagnetorquer8vCurrent", c_float),
+        ("epsAdcs5vCurrent", c_float),
+        ("epsAdcs3v3Current", c_float),
+        ("epsObc3v3Current", c_float),
+
+        ("epsComms5vVoltage", c_float),
+        ("epsComms3v3Voltage", c_float),
+        ("epsMagnetorquer8vVoltage", c_float),
+        ("epsAdcs5vVoltage", c_float),
+        ("epsAdcs3v3Voltage", c_float),
+        ("epsObc3v3Voltage", c_float),
+        
+
+        ("obcState", c_uint8),
+        ("epsState", c_uint8),
+
+        ("numCspPacketsRcvd", c_uint32),
+    ]
+
+class TelemetryData(Structure):
+    """
+    The python equivalent class for the telemetry_data_t structure in the C implementation
+    NOTE: This class has a union so initialize accordingly
+    """
+
+    _anonymous_ = ("u",)
+    _fields_ = [("u", _TelemU), ("telemetry_data_id_t", c_uint), ("timestamp", c_uint32)]
 
 interface.unpackCmdMsg.argtypes = (POINTER(c_uint8 * MAX_CMD_MSG_SIZE), POINTER(c_uint32), POINTER(CmdMsg))
 interface.unpackCmdMsg.restype = c_uint
@@ -132,6 +179,8 @@ interface.unpackCmdResponse.argtypes = (
 interface.unpackCmdResponse.restype = c_uint
 
 
+interface.unpackTelemetry.argtypes = (POINTER(c_uint8 * MAX_CMD_MSG_SIZE), POINTER(c_uint32), POINTER(TelemetryData))
+interface.unpackTelemetry.restype = c_uint
 # ######################################################################
 # ||                                                                  ||
 # ||                        ENUM Declerations                         ||
@@ -178,6 +227,48 @@ class ProgrammingSession(IntEnum):
     """
 
     APPLICATION = 0
+
+
+class TelemId(IntEnum):
+    """
+    Enums corresponding to the C implementation of telemetry_data_id_t
+    """
+
+    TELEM_NONE = 0
+
+    # Temperature values
+    TELEM_CC1120_TEMP = 1
+    TELEM_COMMS_CUSTOM_TRANSCEIVER_TEMP = 2
+    TELEM_OBC_TEMP = 3
+    TELEM_ADCS_MAG_BOARD_TEMP = 4
+    TELEM_ADCS_SENSOR_BOARD_TEMP = 5
+    TELEM_EPS_BOARD_TEMP = 6
+    TELEM_SOLAR_PANEL_1_TEMP = 7
+    TELEM_SOLAR_PANEL_2_TEMP = 8
+    TELEM_SOLAR_PANEL_3_TEMP = 9
+    TELEM_SOLAR_PANEL_4_TEMP = 10
+
+    # Current values
+    TELEM_EPS_COMMS_5V_CURRENT = 11
+    TELEM_EPS_COMMS_3V3_CURRENT = 12
+    TELEM_EPS_MAGNETORQUER_8V_CURRENT = 13
+    TELEM_EPS_ADCS_5V_CURRENT = 14
+    TELEM_EPS_ADCS_3V3_CURRENT = 15
+    TELEM_EPS_OBC_3V3_CURRENT = 16
+
+    # Voltage values
+    TELEM_EPS_COMMS_5V_VOLTAGE = 17
+    TELEM_EPS_COMMS_3V3_VOLTAGE = 18
+    TELEM_EPS_MAGNETORQUER_8V_VOLTAGE = 19
+    TELEM_EPS_ADCS_5V_VOLTAGE = 20
+    TELEM_EPS_ADCS_3V3_VOLTAGE = 21
+    TELEM_EPS_OBC_3V3_VOLTAGE = 22
+
+    TELEM_OBC_STATE = 23
+    TELEM_EPS_STATE = 24
+
+    TELEM_NUM_CSP_PACKETS_RCVD = 25
+    TELEM_PONG = 26
 
 
 # ######################################################################
@@ -300,3 +391,37 @@ def unpack_command_response(cmd_msg_packed: bytes) -> tuple[CmdResponseHeader, b
         raise ValueError("Could not unpack command response. OBC Error Code: " + str(res))
 
     return cmd_msg_response, data_bytes
+
+def unpack_telem(telem_packed: bytes) -> tuple[list[TelemetryData], bytes]:
+    """
+    This takes in bytes of date to be unpacked into a list of telemtry data (see the C implementation for more on 
+    how that's exactly done)
+
+    :param telem_packed: Bytes of an already packed telemtry data packet
+    :return: A list of telem points
+    """
+    if len(telem_packed) > RS_DECODED_DATA_SIZE:
+        raise ValueError("The encoded telem data to unpack is too long")
+
+    bytes_unpacked = c_uint32(0)
+    telem_data_list = []
+    total_bytes_unpacked = 0
+
+    while bytes_unpacked.value < RS_DECODED_DATA_SIZE:
+        if telem_packed[total_bytes_unpacked] == TelemId.TELEM_NONE.value:
+            break
+
+        telemetry_data = TelemetryData()
+        # TODO: see if this causes crashs when total_bytes_unpacked + 16 > RS_DECODED_DATA_SIZE
+        buffer_elements = list(telem_packed[total_bytes_unpacked : total_bytes_unpacked + MAX_CMD_MSG_SIZE])
+        buff = (c_uint8 * MAX_CMD_MSG_SIZE)(*buffer_elements)
+        res = interface.unpackCmdMsg(pointer(buff), pointer(bytes_unpacked), pointer(telemetry_data))
+        total_bytes_unpacked += bytes_unpacked.value
+        bytes_unpacked = c_uint32(0)
+        if res != 0:
+            raise ValueError("Could not unpack telem. OBC Error Code: " + str(res))
+        telem_data_list.append(telemetry_data)
+
+    bytes_not_unpacked = telem_packed[total_bytes_unpacked:]
+
+    return (telem_data_list, bytes_not_unpacked)

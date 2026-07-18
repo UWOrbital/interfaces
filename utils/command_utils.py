@@ -12,6 +12,7 @@ from interfaces.obc_gs_interface.commands.python import (
     CmdCallbackId,
     CmdMsg,
     CmdResponseErrorCode,
+    unpack_telem,
 )
 from interfaces.obc_gs_interface.commands.python.command_factories import COMMAND_FACTORIES
 from interfaces.obc_gs_interface.commands.python.command_framing import command_multi_pack
@@ -76,7 +77,7 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
         if command.id == CmdCallbackId.CMD_EXEC_OBC_RESET.value:
             print(read_bytes)
             return CmdRes(CmdCallbackId.CMD_EXEC_OBC_RESET, CmdResponseErrorCode.CMD_RESPONSE_SUCCESS, 0)
-
+        
         # Check if a frame is what is sent back
         if start_index != -1:
             # These are all the bytes from other tasks that are not a part of the frame
@@ -89,6 +90,11 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
             rcv_frame_bytes = read_bytes[start_index : end_index + 1]
 
             rcv_frame = comms.decode_frame(rcv_frame_bytes)
+
+            if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
+                print(unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE]))
+                return None
+
             # TODO: Handle these return frames
             if rcv_frame is not None and not is_timetagged:
                 return parse_command_response(rcv_frame.data[:RS_DECODED_DATA_SIZE])
