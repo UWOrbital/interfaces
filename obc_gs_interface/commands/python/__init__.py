@@ -415,7 +415,7 @@ def unpack_telem(telem_packed: bytes) -> tuple[list[TelemetryData], bytes]:
         # TODO: see if this causes crashs when total_bytes_unpacked + 16 > RS_DECODED_DATA_SIZE
         buffer_elements = list(telem_packed[total_bytes_unpacked : total_bytes_unpacked + MAX_CMD_MSG_SIZE])
         buff = (c_uint8 * MAX_CMD_MSG_SIZE)(*buffer_elements)
-        res = interface.unpackCmdMsg(pointer(buff), pointer(bytes_unpacked), pointer(telemetry_data))
+        res = interface.unpackTelemetry(pointer(buff), pointer(bytes_unpacked), pointer(telemetry_data))
         total_bytes_unpacked += bytes_unpacked.value
         bytes_unpacked = c_uint32(0)
         if res != 0:
