@@ -92,14 +92,9 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
             rcv_frame = comms.decode_frame(rcv_frame_bytes)
 
             if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
-                telem_bytes =  read_bytes[end_index + 1 :]
-                start_index_telem = telem_bytes.find(b"\x7e")
-                end_index_telem = telem_bytes.rfind(b"\x7e")
-                rcv_frame_bytes_telem = telem_bytes[start_index_telem : end_index_telem + 1]
-                print(rcv_frame_bytes_telem)
-                rcv_frame_telem = comms.decode_frame(rcv_frame_bytes_telem)
-                if rcv_frame_telem is not None:
-                    telem, data = unpack_telem(rcv_frame_telem.data[:RS_DECODED_DATA_SIZE])
+                print(rcv_frame_bytes)
+                if rcv_frame is not None:
+                    telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
                     for telemetry in telem:
                         print(telemetry.id)
                         if telemetry.id == 3:
