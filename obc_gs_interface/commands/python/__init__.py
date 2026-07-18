@@ -138,7 +138,7 @@ class TelemetryData(Structure):
     """
 
     _anonymous_ = ("u",)
-    _fields_ = [("u", _TelemU), ("telemetry_data_id_t", c_uint), ("timestamp", c_uint32)]
+    _fields_ = [("u", _TelemU), ("id", c_uint), ("timestamp", c_uint32)]
 
 interface.unpackCmdMsg.argtypes = (POINTER(c_uint8 * MAX_CMD_MSG_SIZE), POINTER(c_uint32), POINTER(CmdMsg))
 interface.unpackCmdMsg.restype = c_uint
