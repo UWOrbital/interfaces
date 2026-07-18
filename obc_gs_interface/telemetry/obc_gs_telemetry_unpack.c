@@ -35,7 +35,7 @@ obc_gs_error_code_t unpackTelemetry(const uint8_t *buffer, uint32_t *offset, tel
   }
 
   if (telemUnpackFns[id] == NULL) {
-    return OBC_GS_ERR_CODE_INVALID_ARG;
+    return OBC_GS_ERR_CODE_UNSUPPORTED_CMD;
   }
 
   data->id = id;
