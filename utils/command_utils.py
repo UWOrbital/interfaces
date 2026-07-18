@@ -99,6 +99,8 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                         print(telemetry.id)
                         if telemetry.id == 3:
                             print(telemetry.obcTemp)
+                        else:
+                            print(f"Frame data is none {telemetry.obcState}")
                 return None
 
             # TODO: Handle these return frames
