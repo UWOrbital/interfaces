@@ -46,6 +46,12 @@ static void packVerifyCrcCmdData(uint8_t* buffer, uint32_t* offset, const cmd_ms
 // CMD_I2C_PROBE
 static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
+// CMD_GNC_MTQ_TEST_START
+static void packGncMtqTestStartCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+
+// CMD_GNC_MTQ_TEST_STOP
+static void packGncMtqTestStopCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+
 typedef void (*pack_func_t)(uint8_t*, uint32_t*, const cmd_msg_t*);
 
 static const pack_func_t packFns[] = {
@@ -61,6 +67,8 @@ static const pack_func_t packFns[] = {
     [CMD_ERASE_APP] = packEraseAppCmdData,
     [CMD_VERIFY_CRC] = packVerifyCrcCmdData,
     [CMD_I2C_PROBE] = packI2CProbeCmdData,
+    [CMD_GNC_MTQ_TEST_START] = packGncMtqTestStartCmdData,
+    [CMD_GNC_MTQ_TEST_STOP] = packGncMtqTestStopCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -151,5 +159,15 @@ static void packVerifyCrcCmdData(uint8_t* buffer, uint32_t* offset, const cmd_ms
 
 // CMD_I2C_PROBE
 static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+  // No data to pack
+}
+
+// CMD_GNC_MTQ_TEST_START
+static void packGncMtqTestStartCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+  // No data to pack
+}
+
+// CMD_GNC_MTQ_TEST_STOP
+static void packGncMtqTestStopCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   // No data to pack
 }

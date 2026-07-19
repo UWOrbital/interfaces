@@ -49,5 +49,7 @@ typedef enum {
   CMD_DOWNLOAD_DATA,
   CMD_VERIFY_CRC,
   CMD_I2C_PROBE,
+  CMD_GNC_MTQ_TEST_START,
+  CMD_GNC_MTQ_TEST_STOP,
   NUM_CMD_CALLBACKS
 } cmd_callback_id_t;

@@ -220,6 +220,34 @@ def create_cmd_i2c_probe(unixtime_of_execution: int | None = None) -> CmdMsg:
     return cmd_msg
 
 
+def create_cmd_gnc_mtq_test_start(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_GNC_MTQ_TEST_START
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_GNC_MTQ_TEST_START
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_GNC_MTQ_TEST_START
+    return cmd_msg
+
+
+def create_cmd_gnc_mtq_test_stop(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_GNC_MTQ_TEST_STOP
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_GNC_MTQ_TEST_STOP
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_GNC_MTQ_TEST_STOP
+    return cmd_msg
+
+
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_end_of_frame,
     create_cmd_exec_obc_reset,
@@ -234,4 +262,6 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_download_data,
     create_cmd_verify_crc,
     create_cmd_i2c_probe,
+    create_cmd_gnc_mtq_test_start,
+    create_cmd_gnc_mtq_test_stop,
 ]

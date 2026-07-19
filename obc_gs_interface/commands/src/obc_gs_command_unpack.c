@@ -49,6 +49,12 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 // CMD_I2C_PROBE
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
+// CMD_GNC_MTQ_TEST_START
+static void unpackGncMtqTestStartCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+
+// CMD_GNC_MTQ_TEST_STOP
+static void unpackGncMtqTestStopCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+
 typedef void (*unpack_func_t)(const uint8_t*, uint32_t*, cmd_msg_t*);
 
 static const unpack_func_t unpackFns[] = {
@@ -64,6 +70,8 @@ static const unpack_func_t unpackFns[] = {
     [CMD_ERASE_APP] = unpackEraseAppCmdData,
     [CMD_VERIFY_CRC] = unpackVerifyCrcCmdData,
     [CMD_I2C_PROBE] = unpackI2CProbeCmdData,
+    [CMD_GNC_MTQ_TEST_START] = unpackGncMtqTestStartCmdData,
+    [CMD_GNC_MTQ_TEST_STOP] = unpackGncMtqTestStopCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -163,5 +171,15 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 
 // CMD_I2C_PROBE
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+  // No data to unpack
+}
+
+// CMD_GNC_MTQ_TEST_START
+static void unpackGncMtqTestStartCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+  // No data to unpack
+}
+
+// CMD_GNC_MTQ_TEST_STOP
+static void unpackGncMtqTestStopCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
   // No data to unpack
 }
