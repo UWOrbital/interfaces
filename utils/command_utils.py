@@ -2,6 +2,7 @@ from argparse import ArgumentError, ArgumentParser
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
+import sys
 
 from ax25 import Frame
 from interfaces import (
@@ -196,6 +197,9 @@ def arg_parse() -> ArgumentParser:
 
     return parser
 
+class SilentArgumentParser(ArgumentParser):
+    def error(self, message):
+        raise ArgumentError(None, message="Heh")
 
 # The following are specific command parsers with one argument
 # NOTE: Update these as you add enums and always set the destinations of variables to arg1, arg2, arg3 and make the
@@ -205,7 +209,7 @@ def parse_cmd_rtc_time_sync() -> ArgumentParser:
     A function to parse the argument for the rtc_time_sync command
     """
     parent_parser = arg_parse()
-    parser = ArgumentParser(parents=[parent_parser], add_help=False, exit_on_error=False)
+    parser = SilentArgumentParser(parents=[parent_parser], add_help=False, exit_on_error=False)
     parser.add_argument(
         "-rtc",
         "--rtc_sync_time",
@@ -222,7 +226,7 @@ def parse_cmd_downlink_logs_next_pass() -> ArgumentParser:
     A function to parse the argument for the downlink_logs_next_pass command
     """
     parent_parser = arg_parse()
-    parser = ArgumentParser(parents=[parent_parser], add_help=False, exit_on_error=False)
+    parser = SilentArgumentParser(parents=[parent_parser], add_help=False, exit_on_error=False)
     parser.add_argument(
         "-lnp",
         "--log_next_pass",
