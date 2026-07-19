@@ -74,6 +74,8 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
         start_index = read_bytes.find(b"\x7e")
         end_index = read_bytes.rfind(b"\x7e")
 
+        rcv_frame_bytes = None
+
         try: 
             if command.id == CmdCallbackId.CMD_EXEC_OBC_RESET.value:
                 print(read_bytes)
@@ -93,7 +95,6 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                 rcv_frame = comms.decode_frame(rcv_frame_bytes)
 
                 if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
-                    print(rcv_frame_bytes)
                     if rcv_frame is not None:
                         telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
                         for telemetry in telem:
@@ -117,6 +118,10 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                 # TODO: Handle bootloader recieve
                 return parse_command_response(read_bytes[:RS_DECODED_DATA_SIZE])
         except Exception as e:
+            if rcv_frame_bytes is not None:
+                print(rcv_frame_bytes)
+            else:
+                print("Did not find frame")
             print(f"Error: {e}")
             return None
 
