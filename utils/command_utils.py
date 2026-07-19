@@ -9,11 +9,13 @@ from interfaces import (
     OBC_UART_BAUD_RATE,
     RS_DECODED_DATA_SIZE,
 )
+
 from interfaces.obc_gs_interface.commands.python import (
     CmdCallbackId,
     CmdMsg,
     CmdResponseErrorCode,
     unpack_telem,
+    TelemetryData
 )
 from interfaces.obc_gs_interface.commands.python.command_factories import COMMAND_FACTORIES
 from interfaces.obc_gs_interface.commands.python.command_framing import command_multi_pack
@@ -30,7 +32,7 @@ _PADDING_REQUIRED: Final[int] = 300
 LOG_PATH: Path = (Path(__file__).parent / "../logs.log").resolve()
 
 
-def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[CmdRes] | None:
+def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[CmdRes] | list[TelemetryData] | None:
     """
     A function to send a command up to the cube satellite and awaits a response
 
@@ -94,7 +96,8 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                 rcv_frame_bytes = read_bytes[start_index : end_index + 1]
 
                 rcv_frame = comms.decode_frame(rcv_frame_bytes)
-
+                #TODO: Probably need a custom command parser for telem, make this less hacky
+                telemCorrect = True
                 if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
                     if rcv_frame is not None:
                         telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
@@ -105,6 +108,8 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                                 print(telemetry.obcTemp)
                             else:
                                 print(f"Frame data is none {telemetry.obcState}")
+                                return None
+                        return telem
                     return None
 
                 # TODO: Handle these return frames
