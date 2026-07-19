@@ -74,46 +74,51 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
         start_index = read_bytes.find(b"\x7e")
         end_index = read_bytes.rfind(b"\x7e")
 
-        if command.id == CmdCallbackId.CMD_EXEC_OBC_RESET.value:
-            print(read_bytes)
-            return CmdRes(CmdCallbackId.CMD_EXEC_OBC_RESET, CmdResponseErrorCode.CMD_RESPONSE_SUCCESS, 0)
-        
-        # Check if a frame is what is sent back
-        if start_index != -1:
-            # These are all the bytes from other tasks that are not a part of the frame
-            outer_bytes = read_bytes[:start_index] + read_bytes[end_index + 1 :]
+        try: 
+            if command.id == CmdCallbackId.CMD_EXEC_OBC_RESET.value:
+                print(read_bytes)
+                return CmdRes(CmdCallbackId.CMD_EXEC_OBC_RESET, CmdResponseErrorCode.CMD_RESPONSE_SUCCESS, 0)
+            
+            # Check if a frame is what is sent back
+            if start_index != -1:
+                # These are all the bytes from other tasks that are not a part of the frame
+                outer_bytes = read_bytes[:start_index] + read_bytes[end_index + 1 :]
 
-            with open(LOG_PATH, "a") as file:
-                file.write(str(outer_bytes.decode("utf-8")))
+                with open(LOG_PATH, "a") as file:
+                    file.write(str(outer_bytes.decode("utf-8")))
 
-            # Isolate the frame
-            rcv_frame_bytes = read_bytes[start_index : end_index + 1]
+                # Isolate the frame
+                rcv_frame_bytes = read_bytes[start_index : end_index + 1]
 
-            rcv_frame = comms.decode_frame(rcv_frame_bytes)
+                rcv_frame = comms.decode_frame(rcv_frame_bytes)
 
-            if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
-                print(rcv_frame_bytes)
-                if rcv_frame is not None:
-                    telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
-                    for telemetry in telem:
-                        print(telemetry.id)
-                        if telemetry.id == 3:
-                            print(telemetry.obcTemp)
-                        else:
-                            print(f"Frame data is none {telemetry.obcState}")
+                if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
+                    print(rcv_frame_bytes)
+                    if rcv_frame is not None:
+                        telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
+                        for telemetry in telem:
+                            print(telemetry.id)
+                            print(telemetry.timestamp)
+                            if telemetry.id == 3:
+                                print(telemetry.obcTemp)
+                            else:
+                                print(f"Frame data is none {telemetry.obcState}")
+                    return None
+
+                # TODO: Handle these return frames
+                if rcv_frame is not None and not is_timetagged:
+                    return parse_command_response(rcv_frame.data[:RS_DECODED_DATA_SIZE])
+                else:
+                    return None
+            elif is_timetagged:
+                print("Command is time tagged, enable and check logs for a response")
                 return None
-
-            # TODO: Handle these return frames
-            if rcv_frame is not None and not is_timetagged:
-                return parse_command_response(rcv_frame.data[:RS_DECODED_DATA_SIZE])
             else:
-                return None
-        elif is_timetagged:
-            print("Command is time tagged, enable and check logs for a response")
+                # TODO: Handle bootloader recieve
+                return parse_command_response(read_bytes[:RS_DECODED_DATA_SIZE])
+        except Exception as e:
+            print(f"Error: {e}")
             return None
-        else:
-            # TODO: Handle bootloader recieve
-            return parse_command_response(read_bytes[:RS_DECODED_DATA_SIZE])
 
 
 def send_conn_request(com_port: str, timeout: int = 0) -> Frame:
