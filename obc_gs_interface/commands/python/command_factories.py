@@ -219,6 +219,20 @@ def create_cmd_i2c_probe(unixtime_of_execution: int | None = None) -> CmdMsg:
     cmd_msg.id = CmdCallbackId.CMD_I2C_PROBE
     return cmd_msg
 
+def create_cmd_downlink_image(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_DOWNLINK_IMAGE
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_DOWNLINK_IMAGE
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_DOWNLINK_IMAGE
+    return cmd_msg
+
+
 
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_end_of_frame,
@@ -234,4 +248,5 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_download_data,
     create_cmd_verify_crc,
     create_cmd_i2c_probe,
+    create_cmd_downlink_image,
 ]

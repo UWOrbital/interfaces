@@ -2,6 +2,7 @@ from argparse import ArgumentError, ArgumentParser
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
+import time 
 
 from ax25 import Frame
 from interfaces import (
@@ -105,6 +106,27 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
                             else:
                                 print(f"Frame data is none {telemetry.obcState}")
                     return None
+
+                if command.id == CmdCallbackId.CMD_DOWNLINK_IMAGE.value:
+                    start_time = time.monotonic()
+                    temp_buffer = []
+                    # two minute timeout
+                    while True and (time.monotonic() - start_time < 120):
+                        flag_indexes = [index for index, byte in enumerate(read_bytes) if byte == b"\x7e"]
+                        index = 0
+                        for _ in range(len(flag_indexes) // 2):
+                            frame_decoded = comms.decode_frame(read_bytes[flag_indexes[index] : flag_indexes[index + 1] + 1])
+                            index += 2
+                            if frame_decoded is not None:
+                                print(frame_decoded.data[1:RS_DECODED_DATA_SIZE])
+                            else:
+                                print("Decoding failed")
+                                return None
+
+                        temp_buffer = []
+
+                        # Handle case where the frame is split between two ser.reads(i.e. there is odd number of flags)
+
 
                 # TODO: Handle these return frames
                 if rcv_frame is not None and not is_timetagged:
