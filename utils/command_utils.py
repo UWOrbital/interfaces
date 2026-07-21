@@ -1,3 +1,5 @@
+import base64
+import time
 from argparse import ArgumentError, ArgumentParser
 from collections.abc import Callable
 from pathlib import Path
@@ -27,6 +29,72 @@ from interfaces.utils.encode_decode import CommsPipeline
 _PADDING_REQUIRED: Final[int] = 300
 
 LOG_PATH: Path = (Path(__file__).parent / "../logs.log").resolve()
+
+# AX.25 flag byte that delimits every frame on the wire.
+_FRAME_FLAG: Final[int] = 0x7E
+# A downlinked image frame whose first data byte is 0 marks the end of the image (matches
+# IMAGE_END_MARKER in the OBC's downlink_encoder.c).
+_IMAGE_END_MARKER: Final[int] = 0
+# Wait this long for the first image bytes (covers the OBC capture time), then for the link to go idle.
+_IMAGE_FIRST_DATA_TIMEOUT: Final[float] = 10.0
+_IMAGE_IDLE_TIMEOUT: Final[float] = 3.0
+_IMAGE_MAX_SECONDS: Final[float] = 180.0
+
+
+def _receive_and_print_image(ser: Serial, comms: CommsPipeline) -> None:
+    """Read the downlinked image frame stream and print the whole image as base64 to the console.
+
+    The OBC streams a captured image as ordinary AX.25 / Reed-Solomon frames (the CMD_CAPTURE_IMAGE
+    path), so each frame is decoded with the same CommsPipeline used for command responses. Inside
+    each decoded 223-byte block the first byte is the number of image bytes it carries (0 marks the
+    end); we concatenate those bytes and print them as one base64 string, the same base64-over-UART
+    idea used by the test_app_arducam example. Paste the base64 into any base64 -> JPEG converter.
+
+    :param ser: An open serial port, positioned right after the capture command was sent.
+    :param comms: The CommsPipeline used to decode each frame.
+    """
+    ser.timeout = 0.5
+    raw = bytearray()
+    start = time.monotonic()
+    last_data = start
+    got_data = False
+    while True:
+        chunk = ser.read(8192)
+        now = time.monotonic()
+        if chunk:
+            raw += chunk
+            last_data = now
+            got_data = True
+        elif got_data and now - last_data > _IMAGE_IDLE_TIMEOUT:
+            break
+        elif not got_data and now - start > _IMAGE_FIRST_DATA_TIMEOUT:
+            break
+        if now - start > _IMAGE_MAX_SECONDS:
+            break
+
+    # Split the byte stream into flag-delimited frames, decode each, and strip the length prefix.
+    image = bytearray()
+    flag_positions = [index for index, byte in enumerate(raw) if byte == _FRAME_FLAG]
+    for frame_start, frame_end in zip(flag_positions, flag_positions[1:], strict=False):
+        frame = bytes(raw[frame_start : frame_end + 1])
+        if len(frame) <= 2:  # empty back-to-back flags / noise
+            continue
+        try:
+            decoded = comms.decode_frame(frame)
+        except (ValueError, IndexError):
+            continue  # non-frame bytes (e.g. log text) between frames
+        if decoded is None or decoded.data is None:
+            continue
+        block = bytes(decoded.data)
+        length = block[0]
+        if length == _IMAGE_END_MARKER:
+            break
+        image += block[1 : 1 + length]
+
+    print("----- BEGIN IMAGE BASE64 -----")
+    print(base64.b64encode(bytes(image)).decode("ascii"))
+    print("----- END IMAGE BASE64 -----")
+    print(f"({len(image)} image bytes received)")
 
 
 def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[CmdRes] | None:
@@ -67,6 +135,12 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
         # Send the frames to the board
         ser.write(send_bytes)
         print("Frame Sent")
+
+        # CMD_CAPTURE_IMAGE downlinks an image as its own stream of frames (no command response), so
+        # read the whole stream and print it as base64 instead of trying to parse a single response.
+        if command.id == CmdCallbackId.CMD_CAPTURE_IMAGE.value:
+            _receive_and_print_image(ser, comms)
+            return None
 
         # Await a response (This is set to an arbitrary large amount as the logger and stats collector might
         # send through data)
