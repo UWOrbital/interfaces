@@ -253,11 +253,12 @@ obc_gs_error_code_t ax25SendUFrame(packed_ax25_u_frame_t *ax25Data, uint8_t cmd,
   ax25PacketUnstuffed[AX25_U_FRAME_FCS_POSITION + 1] = (uint8_t)(fcs & 0xFF);
   ax25PacketUnstuffed[AX25_MINIMUM_U_FRAME_CMD_LENGTH - 1] = AX25_FLAG;
 
-  errCode =
-      ax25Stuff(ax25PacketUnstuffed, AX25_MINIMUM_U_FRAME_CMD_LENGTH, ax25Data->data, (uint16_t *)&ax25Data->length);
+  uint16_t stuffedLen = 0;
+  errCode = ax25Stuff(ax25PacketUnstuffed, AX25_MINIMUM_U_FRAME_CMD_LENGTH, ax25Data->data, &stuffedLen);
   if (errCode != OBC_GS_ERR_CODE_SUCCESS) {
     return errCode;
   }
+  ax25Data->length = (uint8_t)stuffedLen;
 
   return OBC_GS_ERR_CODE_SUCCESS;
 }
