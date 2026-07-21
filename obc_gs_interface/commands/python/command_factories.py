@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from ctypes import (
     c_uint,
+    c_uint8,
     c_uint16,
     c_uint32,
 )
@@ -220,6 +221,25 @@ def create_cmd_i2c_probe(unixtime_of_execution: int | None = None) -> CmdMsg:
     return cmd_msg
 
 
+def create_cmd_capture_image(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_CAPTURE_IMAGE
+
+    Captures an image on the OBC and downlinks it. The camera defaults to PRIMARY (0);
+    the wire format carries a single cameraId byte so a future child parser can select
+    SECONDARY without changing the C side.
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_CAPTURE_IMAGE
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_CAPTURE_IMAGE
+    cmd_msg.captureImage.cameraId = c_uint8(0)  # PRIMARY
+    return cmd_msg
+
+
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_end_of_frame,
     create_cmd_exec_obc_reset,
@@ -234,4 +254,5 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_download_data,
     create_cmd_verify_crc,
     create_cmd_i2c_probe,
+    create_cmd_capture_image,
 ]

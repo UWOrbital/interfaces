@@ -17,6 +17,11 @@ typedef struct {
   uint8_t logLevel;
 } downlink_logs_next_pass_cmd_data_t;
 
+// CMD_CAPTURE_IMAGE
+typedef struct {
+  uint8_t cameraId;  // 0 = PRIMARY, 1 = SECONDARY (matches camera_id_t in arducam.h)
+} capture_image_cmd_data_t;
+
 /* -------------------------- */
 /* BL Command Data Structures */
 /* -------------------------- */
@@ -47,6 +52,7 @@ typedef struct {
     downlink_logs_next_pass_cmd_data_t downlinkLogsNextPass;
     download_data_cmd_data_t downloadData;
     set_programming_session_cmd_data_t setProgrammingSession;
+    capture_image_cmd_data_t captureImage;
   };
 
   uint32_t timestamp;  // Unix timestamp in seconds

@@ -55,6 +55,14 @@ class SetProgrammingSessionCmdData(Structure):
     _fields_ = [("programmingSession", c_uint)]
 
 
+class CaptureImageCmdData(Structure):
+    """
+    The python equivalent class for the capture_image_cmd_data_t structure in the C implementation
+    """
+
+    _fields_ = [("cameraId", c_uint8)]
+
+
 # NOTE: When adding commands only add their data to the following union type as shown with RtcSyncCmdData and
 # DownlinkLogsNextPassCmdData
 class _U(Union):
@@ -67,6 +75,7 @@ class _U(Union):
         ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
         ("downloadData", DownloadDataCmdData),
         ("setProgrammingSession", SetProgrammingSessionCmdData),
+        ("captureImage", CaptureImageCmdData),
     ]
 
 
@@ -208,7 +217,8 @@ class CmdCallbackId(IntEnum):
     CMD_DOWNLOAD_DATA = 10
     CMD_VERIFY_CRC = 11
     CMD_I2C_PROBE = 12
-    NUM_CMD_CALLBACKS = 13
+    CMD_CAPTURE_IMAGE = 13
+    NUM_CMD_CALLBACKS = 14
 
 
 # Path to File: interfaces/obc_gs_interface/commands/obc_gs_commands_response.h
