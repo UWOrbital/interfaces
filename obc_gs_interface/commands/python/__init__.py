@@ -54,6 +54,13 @@ class SetProgrammingSessionCmdData(Structure):
 
     _fields_ = [("programmingSession", c_uint)]
 
+class AroKeySyncCmdData(Structure):
+    """
+    The python equivalent class for the aro_key_sync_cmd 
+    structure in the C implementation
+    """
+    _fields_ = [("key", c_uint8 * 32)]
+
 
 # NOTE: When adding commands only add their data to the following union type as shown with RtcSyncCmdData and
 # DownlinkLogsNextPassCmdData
@@ -67,6 +74,7 @@ class _U(Union):
         ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
         ("downloadData", DownloadDataCmdData),
         ("setProgrammingSession", SetProgrammingSessionCmdData),
+        ("aroKeySync", AroKeySyncCmdData)
     ]
 
 
@@ -208,7 +216,8 @@ class CmdCallbackId(IntEnum):
     CMD_DOWNLOAD_DATA = 10
     CMD_VERIFY_CRC = 11
     CMD_I2C_PROBE = 12
-    NUM_CMD_CALLBACKS = 13
+    CMD_ARO_KEY_SYNC = 13
+    NUM_CMD_CALLBACKS = 14
 
 
 # Path to File: interfaces/obc_gs_interface/commands/obc_gs_commands_response.h

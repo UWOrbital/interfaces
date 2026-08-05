@@ -49,6 +49,10 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 // CMD_I2C_PROBE
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
+// CMD_ARO_KEY_SYNC
+static void unpackAroKeySyncCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+
+
 typedef void (*unpack_func_t)(const uint8_t*, uint32_t*, cmd_msg_t*);
 
 static const unpack_func_t unpackFns[] = {
@@ -64,6 +68,7 @@ static const unpack_func_t unpackFns[] = {
     [CMD_ERASE_APP] = unpackEraseAppCmdData,
     [CMD_VERIFY_CRC] = unpackVerifyCrcCmdData,
     [CMD_I2C_PROBE] = unpackI2CProbeCmdData,
+    [CMD_ARO_KEY_SYNC] = unpackAroKeySyncCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -165,3 +170,11 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
   // No data to unpack
 }
+
+// CMD_ARO_KEY_SYNC
+static void unpackAroKeySyncCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+  for (uint8_t i = 0; i < 32; i++) {
+    cmdMsg->aroKeySync.key[i] = unpackUint8(buffer, offset);
+  }
+}
+
