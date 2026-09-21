@@ -219,6 +219,57 @@ def create_cmd_i2c_probe(unixtime_of_execution: int | None = None) -> CmdMsg:
     cmd_msg.id = CmdCallbackId.CMD_I2C_PROBE
     return cmd_msg
 
+def create_cmd_enable_boot_app_a(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_ENABLE_BOOT_APP_A
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_ENABLE_BOOT_APP_A
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_ENABLE_BOOT_APP_A
+    return cmd_msg
+
+def create_cmd_enable_boot_app_b(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_ENABLE_BOOT_APP_B
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_ENABLE_BOOT_APP_B
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_ENABLE_BOOT_APP_B
+    return cmd_msg
+
+def create_cmd_enable_write_app_a(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_ENABLE_WRITE_APP_A
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_ENABLE_WRITE_APP_A
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_ENABLE_WRITE_APP_A
+    return cmd_msg
+
+def create_cmd_enable_write_app_b(unixtime_of_execution: int | None = None) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_ENABLE_WRITE_APP_B
+
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_ENABLE_WRITE_APP_B
+    """
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_ENABLE_WRITE_APP_B
+    return cmd_msg
 
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_end_of_frame,
@@ -234,4 +285,8 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_download_data,
     create_cmd_verify_crc,
     create_cmd_i2c_probe,
+    create_cmd_enable_boot_app_a,
+    create_cmd_enable_boot_app_b,
+    create_cmd_enable_write_app_a,
+    create_cmd_enable_write_app_b,
 ]
