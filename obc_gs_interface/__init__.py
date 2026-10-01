@@ -2,11 +2,17 @@ from ctypes import CDLL
 from pathlib import Path
 from sys import platform
 
-if platform == "darwin":
-    extension = "dylib"
-else:
-    extension = "so"
+_interface = None
 
-# The shared object file we are using the access the c functions via ctypes
-path = (Path(__file__).parent / f"../build/libobc-gs-interface.{extension}").resolve()
-interface = CDLL(str(path))
+
+def __getattr__(name: str):
+    """Load the native interface library only for ctypes-backed modules."""
+    if name != "interface":
+        raise AttributeError(name)
+
+    global _interface
+    if _interface is None:
+        extension = "dylib" if platform == "darwin" else "so"
+        path = (Path(__file__).parent / f"../build/libobc-gs-interface.{extension}").resolve()
+        _interface = CDLL(str(path))
+    return _interface

@@ -18,7 +18,7 @@ obc_gs_error_code_t unpackCmdResponse(uint8_t* buffer, cmd_response_header_t* re
   obc_gs_error_code_t errCode = 0;
   response->errCode = (cmd_response_error_code_t)unpackUint8(buffer, &offset);
   response->dataLen = unpackUint8(buffer, &offset);
-  if (response->dataLen >= CMD_RESPONSE_DATA_MAX_SIZE) return OBC_GS_ERR_CODE_INVALID_ARG;
+  if (response->dataLen > CMD_RESPONSE_DATA_MAX_SIZE) return OBC_GS_ERR_CODE_INVALID_ARG;
 
   memcpy(responseDataBuffer, &buffer[offset], CMD_RESPONSE_DATA_MAX_SIZE);
   return errCode;

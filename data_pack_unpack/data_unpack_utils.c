@@ -36,3 +36,21 @@ float unpackFloat(const uint8_t* buffer, uint32_t* offset) {
 
   return val;
 }
+
+obc_gs_error_code_t unpackUint16LE(const uint8_t* buf, uint16_t* val) {
+  if (buf == NULL || val == NULL) {
+    return OBC_GS_ERR_CODE_INVALID_ARG;
+  }
+
+  *val = ((uint16_t)buf[0] << 0) | ((uint16_t)buf[1] << 8);
+  return OBC_GS_ERR_CODE_SUCCESS;
+}
+
+obc_gs_error_code_t unpackUint32LE(const uint8_t* buf, uint32_t* val) {
+  if (buf == NULL || val == NULL) {
+    return OBC_GS_ERR_CODE_INVALID_ARG;
+  }
+
+  *val = ((uint32_t)buf[0] << 0) | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
+  return OBC_GS_ERR_CODE_SUCCESS;
+}
