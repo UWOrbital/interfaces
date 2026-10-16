@@ -5,6 +5,10 @@ endif()
 
 set(OBC_GS_INTERFACE_LIB_NAME obc-gs-interface)
 
+# On Windows with MSVC, symbols must be explicitly exported from a DLL.
+# This CMake flag auto-generates a .def file to export all symbols.
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 set(INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/common
   ${CMAKE_CURRENT_SOURCE_DIR}/obc_gs_interface/commands/inc
