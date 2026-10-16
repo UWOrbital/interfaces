@@ -46,6 +46,9 @@ static void packVerifyCrcCmdData(uint8_t* buffer, uint32_t* offset, const cmd_ms
 // CMD_I2C_PROBE
 static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
+// CMD_ARO_KEY_SYNC
+static void packAroKeySyncCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+
 typedef void (*pack_func_t)(uint8_t*, uint32_t*, const cmd_msg_t*);
 
 static const pack_func_t packFns[] = {
@@ -61,6 +64,7 @@ static const pack_func_t packFns[] = {
     [CMD_ERASE_APP] = packEraseAppCmdData,
     [CMD_VERIFY_CRC] = packVerifyCrcCmdData,
     [CMD_I2C_PROBE] = packI2CProbeCmdData,
+    [CMD_ARO_KEY_SYNC] = packAroKeySyncCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -153,3 +157,11 @@ static void packVerifyCrcCmdData(uint8_t* buffer, uint32_t* offset, const cmd_ms
 static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   // No data to pack
 }
+
+// CMD_ARO_KEY_SYNC
+static void packAroKeySyncCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+  for (uint8_t i = 0; i < 32; i++) {
+    packUint8(msg->aroKeySync.key[i], buffer, offset);
+  }
+}
+
