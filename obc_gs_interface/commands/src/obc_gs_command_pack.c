@@ -47,16 +47,19 @@ static void packVerifyCrcCmdData(uint8_t* buffer, uint32_t* offset, const cmd_ms
 static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
 // CMD_ENABLE_BOOT_APP_A
-static void packEnableBootAppA(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+static void packEnableBootAppACmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
 // CMD_ENABLE_BOOT_APP_B
-static void packEnableBootAppB(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+static void packEnableBootAppBCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
-// CMD_ENABLE_WRITE_APP_A
-static void packEnableWriteAppA(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+// CMD_OBC_ERASE_APP
+static void packObcEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
-// CMD_ENABLE_WRITE_APP_B
-static void packEnableWriteAppB(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+// CMD_OBC_WRITE_APP
+static void packObcWriteAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
+
+// // CMD_OBC_DOWNLINK_CHALLENGE
+// static void packObcDownlinkChallengeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
 typedef void (*pack_func_t)(uint8_t*, uint32_t*, const cmd_msg_t*);
 
@@ -73,10 +76,10 @@ static const pack_func_t packFns[] = {
     [CMD_ERASE_APP] = packEraseAppCmdData,
     [CMD_VERIFY_CRC] = packVerifyCrcCmdData,
     [CMD_I2C_PROBE] = packI2CProbeCmdData,
-    [CMD_ENABLE_BOOT_APP_A] = packEnableBootAppA,
-    [CMD_ENABLE_BOOT_APP_B] = packEnableBootAppB,
-    [CMD_ENABLE_WRITE_APP_A] = packEnableWriteAppA,
-    [CMD_ENABLE_WRITE_APP_B] = packEnableWriteAppB,
+    [CMD_ENABLE_BOOT_APP_A] = packEnableBootAppACmdData,
+    [CMD_ENABLE_BOOT_APP_B] = packEnableBootAppBCmdData,
+    [CMD_OBC_ERASE_APP] = packObcEraseAppCmdData,
+    [CMD_OBC_WRITE_APP] = packObcWriteAppCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -145,7 +148,7 @@ static void packUplinkDisconnectCmdData(uint8_t* buffer, uint32_t* offset, const
 
 // CMD_SET_PROGRAMMING_SESSION
 static void packSetProgrammingSessionCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* cmdMsg) {
-  packUint8((uint8_t)cmdMsg->setProgrammingSession.programmingSession, buffer, offset);
+  packUint8((uint8_t)cmdMsg->downloadData.programmingSession, buffer, offset);
 }
 
 // CMD_DOWNLOAD_DATA
@@ -157,7 +160,7 @@ static void packDownloadDataCmdData(uint8_t* buffer, uint32_t* offset, const cmd
 
 // CMD_ERASE_APP
 static void packEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* cmdMsg) {
-  // No data to pack
+  packUint8((uint8_t)cmdMsg->downloadData.programmingSession, buffer, offset);
 }
 
 // CMD_VERIFY_CRC
@@ -171,21 +174,27 @@ static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg
 }
 
 // CMD_ENABLE_BOOT_APP_A
-static void packEnableBootAppA(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+static void packEnableBootAppACmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   // No data to pack
 }
 
 // CMD_ENABLE_BOOT_APP_B
-static void packEnableBootAppB(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+static void packEnableBootAppBCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   // No data to pack
 }
 
-// CMD_ENABLE_WRITE_APP_A
-static void packEnableWriteAppA(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
-  // No data to pack
+// CMD_OBC_ERASE_APP
+static void packObcEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+  packUint8((uint8_t)msg->downloadData.programmingSession, buffer, offset);
 }
 
-// CMD_ENABLE_WRITE_APP_B
-static void packEnableWriteAppB(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
-  // No data to pack
+// CMD_OBC_WRITE_APP
+static void packObcWriteAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+  packUint8((uint8_t)msg->downloadData.programmingSession, buffer, offset);
+  packUint16(msg->downloadData.length, buffer, offset);
+  packUint32(msg->downloadData.address, buffer, offset);
 }
+
+// // CMD_OBC_DOWNLINK_CHALLENGE
+// static void packObcDownlinkChallengeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
+// }

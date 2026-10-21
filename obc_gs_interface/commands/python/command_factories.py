@@ -147,11 +147,11 @@ def create_cmd_set_programming_session(
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_SET_PROGRAMMING_SESSION
-    cmd_msg.setProgrammingSession.programmingSession = c_uint(programming_session.value)
+    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
 
-def create_cmd_erase_app(unixtime_of_execution: int | None = None) -> CmdMsg:
+def create_cmd_erase_app(programming_session: ProgrammingSession, unixtime_of_execution: int | None = None) -> CmdMsg:
     """
     Function to create a CmdMsg structure for CMD_ERASE_APP
 
@@ -162,6 +162,7 @@ def create_cmd_erase_app(unixtime_of_execution: int | None = None) -> CmdMsg:
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_ERASE_APP
+    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
 
@@ -186,7 +187,7 @@ def create_cmd_download_data(
 
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_DOWNLOAD_DATA
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session.value)
+    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
     cmd_msg.downloadData.length = c_uint16(length)
     cmd_msg.downloadData.address = c_uint32(address)
     return cmd_msg
@@ -245,30 +246,63 @@ def create_cmd_enable_boot_app_b(unixtime_of_execution: int | None = None) -> Cm
     cmd_msg.id = CmdCallbackId.CMD_ENABLE_BOOT_APP_B
     return cmd_msg
 
-def create_cmd_enable_write_app_a(unixtime_of_execution: int | None = None) -> CmdMsg:
+def create_cmd_obc_erase_app(programming_session: ProgrammingSession, unixtime_of_execution: int | None = None) -> CmdMsg:
     """
-    Function to create a CmdMsg structure for CMD_ENABLE_WRITE_APP_A
+    Function to create a CmdMsg structure for CMD_OBC_ERASE_APP
 
     :param unixtime_of_execution: A time of when to execute a certain event,
                                   by default, it is set to None (i.e. a specific
                                   time is not needed)
-    :return: CmdMsg structure for CMD_ENABLE_WRITE_APP_A
+    :return: CmdMsg structure for CMD_OBC_ERASE_APP
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
-    cmd_msg.id = CmdCallbackId.CMD_ENABLE_WRITE_APP_A
+    cmd_msg.id = CmdCallbackId.CMD_OBC_ERASE_APP
+    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
-def create_cmd_enable_write_app_b(unixtime_of_execution: int | None = None) -> CmdMsg:
+def create_cmd_obc_write_app(
+    programming_session: ProgrammingSession, length: int, address: int, unixtime_of_execution: int | None = None
+) -> CmdMsg:
     """
-    Function to create a CmdMsg structure for CMD_ENABLE_WRITE_APP_B
+    Function to create a CmdMsg structure for CMD_OBC_WRITE_APP
 
+    :param programming_session: Defines the programming session of the current packet
+    :param length: The length of the data to be downloaded
+    :param address: The address on the board where the data should be written to
     :param unixtime_of_execution: A time of when to execute a certain event,
                                   by default, it is set to None (i.e. a specific
                                   time is not needed)
-    :return: CmdMsg structure for CMD_ENABLE_WRITE_APP_B
+    :return: CmdMsg structure for CMD_OBC_WRITE_APP
     """
+    if length > 65535:
+        raise ValueError("Length for download data command too large (cannot be encoded into a c_uint16)")
+    if address > 4294967295:
+        raise ValueError("Invalid address download data command (cannot be encoded into a c_uint32)")
+
     cmd_msg = CmdMsg(unixtime_of_execution)
-    cmd_msg.id = CmdCallbackId.CMD_ENABLE_WRITE_APP_B
+    cmd_msg.id = CmdCallbackId.CMD_OBC_WRITE_APP
+    cmd_msg.downloadData.length = c_uint16(length)
+    cmd_msg.downloadData.address = c_uint32(address)
+    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
+    return cmd_msg
+
+def create_cmd_obc_downlink_challenge(
+    programming_session: ProgrammingSession, length: int, address: int, unixtime_of_execution: int | None = None
+) -> CmdMsg:
+    """
+    Function to create a CmdMsg structure for CMD_OBC_DOWNLINK_CHALLENGE
+
+    :param programming_session: Defines the programming session of the current packet
+    :param length: The length of the data to be downloaded
+    :param address: The address on the board where the data should be written to
+    :param unixtime_of_execution: A time of when to execute a certain event,
+                                  by default, it is set to None (i.e. a specific
+                                  time is not needed)
+    :return: CmdMsg structure for CMD_OBC_DOWNLINK_CHALLENGE
+    """
+   
+    cmd_msg = CmdMsg(unixtime_of_execution)
+    cmd_msg.id = CmdCallbackId.CMD_OBC_DOWNLINK_CHALLENGE
     return cmd_msg
 
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
@@ -287,6 +321,7 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_i2c_probe,
     create_cmd_enable_boot_app_a,
     create_cmd_enable_boot_app_b,
-    create_cmd_enable_write_app_a,
-    create_cmd_enable_write_app_b,
+    create_cmd_obc_erase_app,
+    create_cmd_obc_write_app,
+    create_cmd_obc_downlink_challenge,
 ]

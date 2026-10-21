@@ -3,8 +3,6 @@ from binascii import crc_hqx
 from ax25 import Address, Control, Frame, FrameType
 from pyStuffing import BitStuffing
 
-from interfaces import AX25_NON_INFO_BYTES, RS_ENCODED_DATA_SIZE
-
 
 class AX25:
     """
@@ -118,15 +116,10 @@ class AX25:
         unstuff = BitStuffing(int_list)
         unstuff.stuffed = int_list
         unstuff.startUnstuffing()
-        data = self._int_list_to_bytes(unstuff.unStuffed)
 
-        # Remove a 0 at the end of the string that might have been created as a result of adding in 0s
-        # There is a small chance that the last fcs byte is 0 so we check if the data size is bigger than it's supposed
-        # to be
-        # We also check if the frame is a U frame in which case it has to be less than RS_ENCODED_DATA_SIZE
-        if (data[-1] == 0 and len(data) > RS_ENCODED_DATA_SIZE + AX25_NON_INFO_BYTES) or (
-            data[-1] == 0 and len(data) < RS_ENCODED_DATA_SIZE
-        ):
+        data = self._int_list_to_bytes(unstuff.unStuffed)
+ 
+        if len(unstuff.unStuffed) % 8 != 0:
             data = data[:-1]
 
         data_bytes = bytearray(data)
@@ -145,7 +138,7 @@ class AX25:
 
         unstuff = BitStuffing(self._bytes_to_int_list(data_stripped))
         unstuff.startStuffing()
-        data_bytes = bytearray(self._int_list_to_bytes(unstuff.stuffed)).rstrip(b"\x00")
+        data_bytes = bytearray(self._int_list_to_bytes(unstuff.stuffed))
 
         # Define the flags
         start_end_flag = bytearray(bytes.fromhex("7E"))
@@ -178,9 +171,13 @@ class AX25:
         res = "".join([str(s) for s in data])
         # Make sure that this string is a multiple of 8 by adding 0s at the end (this makes sure that the last byte was
         # not cut off)
-        res = res + ("0" * (8 - len(res) % 8))
+
+        if len(res) % 8 != 0:
+            res = res + ("0" * (8 - len(res) % 8))
+
         # Loop through every 8 characters and convert the bits to an integer which we can then convert to a byte
         data_bytes = bytes(int(res[i : i + 8], 2) for i in range(0, len(res), 8))
+
         return data_bytes
 
 

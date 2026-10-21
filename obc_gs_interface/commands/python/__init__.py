@@ -210,8 +210,8 @@ class CmdCallbackId(IntEnum):
     CMD_I2C_PROBE = 12
     CMD_ENABLE_BOOT_APP_A = 13
     CMD_ENABLE_BOOT_APP_B = 14
-    CMD_ENABLE_WRITE_APP_A = 15
-    CMD_ENABLE_WRITE_APP_B = 16
+    CMD_OBC_ERASE_APP = 15
+    CMD_OBC_WRITE_APP= 16
     NUM_CMD_CALLBACKS = 17
 
 
@@ -227,11 +227,11 @@ class CmdResponseErrorCode(IntEnum):
 
 class ProgrammingSession(IntEnum):
     """
-    Enums corresponding to the C implementation of the cmd_response_error_code_t
+    Enums corresponding to the C implementation of the programming_session_t
     """
 
-    APPLICATION = 0
-
+    APP_SLOT_A = 0
+    APP_SLOT_B = 0xF4
 
 class TelemId(IntEnum):
     """
@@ -293,7 +293,7 @@ def pack_command(cmd_msg: CmdMsg) -> bytes:
     NOTE: When the class is initialized, it will use internal variables to keep a running count of the packOffset
     and numPacked parameters from the C implementation.
 
-    :param cmd_msg: A c-style structure that hold the command message
+    :param cmd_msg: A c-style structure that holds the command message
     :return: Bytes of the packed message
     """
     buffer = (c_uint8 * MAX_CMD_MSG_SIZE)(*([0] * MAX_CMD_MSG_SIZE))

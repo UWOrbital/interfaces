@@ -50,16 +50,19 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
 // CMD_ENABLE_BOOT_APP_A
-static void unpackEnableBootAppA(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+static void unpackEnableBootAppACmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg);
 
 // CMD_ENABLE_BOOT_APP_B
-static void unpackEnableBootAppB(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+static void unpackEnableBootAppBCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg);
 
-// CMD_ENABLE_WRITE_APP_A
-static void unpackEnableWriteAppA(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+// CMD_OBC_ERASE_APP
+static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
-// CMD_ENABLE_WRITE_APP_B
-static void unpackEnableWriteAppB(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+// CMD_OBC_WRITE_APP
+static void unpackObcWriteAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+
+// // CMD_OBC_DOWNLINK_CHALLENGE
+// static void unpackObcDownlinkChallengeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
 typedef void (*unpack_func_t)(const uint8_t*, uint32_t*, cmd_msg_t*);
 
@@ -76,10 +79,11 @@ static const unpack_func_t unpackFns[] = {
     [CMD_ERASE_APP] = unpackEraseAppCmdData,
     [CMD_VERIFY_CRC] = unpackVerifyCrcCmdData,
     [CMD_I2C_PROBE] = unpackI2CProbeCmdData,
-    [CMD_ENABLE_BOOT_APP_A] = unpackEnableBootAppA,
-    [CMD_ENABLE_BOOT_APP_B] = unpackEnableBootAppB,
-    [CMD_ENABLE_WRITE_APP_A] = unpackEnableWriteAppA,
-    [CMD_ENABLE_WRITE_APP_B] = unpackEnableWriteAppB,
+    [CMD_ENABLE_BOOT_APP_A] = unpackEnableBootAppACmdData,
+    [CMD_ENABLE_BOOT_APP_B] = unpackEnableBootAppBCmdData,
+    [CMD_OBC_ERASE_APP] = unpackObcEraseAppCmdData,
+    [CMD_OBC_WRITE_APP] = unpackObcWriteAppCmdData,
+    // [CMD_OBC_DOWNLINK_CHALLENGE] = unpackObcDownlinkChallengeCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -169,7 +173,7 @@ static void unpackDownloadDataCmdData(const uint8_t* buffer, uint32_t* offset, c
 
 // CMD_ERASE_APP
 static void unpackEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  // No data to unpack
+  cmdMsg->downloadData.programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_VERIFY_CRC
@@ -183,21 +187,29 @@ static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_m
 }
 
 // CMD_ENABLE_BOOT_APP_A
-static void unpackEnableBootAppA(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+static void unpackEnableBootAppACmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
   // No data to unpack
 }
 
 // CMD_ENABLE_BOOT_APP_B
-static void unpackEnableBootAppB(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+static void unpackEnableBootAppBCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
   // No data to unpack
 }
 
-// CMD_ENABLE_WRITE_APP_A
-static void unpackEnableWriteAppA(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  // No data to unpack
+// CMD_OBC_ERASE_APP
+static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
+  msg->downloadData.programmingSession = unpackUint8(buffer, offset);
 }
 
-// CMD_ENABLE_WRITE_APP_B
-static void unpackEnableWriteAppB(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  // No data to unpack
+// CMD_OBC_WRITE_APP
+static void unpackObcWriteAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
+  msg->downloadData.programmingSession = unpackUint8(buffer, offset);
+  msg->downloadData.length = unpackUint16(buffer, offset);
+  msg->downloadData.address = unpackUint32(buffer, offset);
+  // Typecast necessary to avoid the const pointer to pointer conversion warning
+  msg->downloadData.data = (uint8_t*)buffer + *offset;
 }
+
+// // CMD_OBC_DOWNLINK_CHALLENGE
+// static void unpackObcDownlinkChallenge(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) { 
+// }

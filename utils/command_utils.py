@@ -2,7 +2,8 @@ from argparse import ArgumentError, ArgumentParser
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
-import sys
+from math import ceil
+from tqdm import tqdm
 
 from ax25 import Frame
 from interfaces import (
@@ -15,7 +16,8 @@ from interfaces.obc_gs_interface.commands.python import (
     CmdMsg,
     CmdResponseErrorCode,
     unpack_telem,
-    TelemetryData
+    TelemetryData,
+    pack_command,
 )
 from interfaces.obc_gs_interface.commands.python.command_factories import COMMAND_FACTORIES
 from interfaces.obc_gs_interface.commands.python.command_framing import command_multi_pack
@@ -24,6 +26,9 @@ from interfaces.obc_gs_interface.commands.python.command_response_classes import
 from serial import PARITY_NONE, STOPBITS_TWO, Serial
 
 from interfaces.utils.encode_decode import CommsPipeline
+
+# Refer to the bl_command_callbacks.c for the number
+COMMAND_DATA_SIZE: Final[int] = 208
 
 # This is a constant value set in the python and OBC side as to what length of I Frame the OBC will be waiting to
 # receive. This must be followed or the obc will not function as expected
@@ -71,65 +76,99 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
         ser.write(send_bytes)
         print("Frame Sent")
 
-        # Await a response (This is set to an arbitrary large amount as the logger and stats collector might
-        # send through data)
-        read_bytes = ser.read(10000)
-        start_index = read_bytes.find(b"\x7e")
-        end_index = read_bytes.rfind(b"\x7e")
+        return receive_cmd_res(command.id, ser, comms, is_timetagged, com_port, timeout)
 
-        rcv_frame_bytes = None
 
-        try: 
-            if command.id == CmdCallbackId.CMD_EXEC_OBC_RESET.value:
-                print(read_bytes)
-                return CmdRes(CmdCallbackId.CMD_EXEC_OBC_RESET, CmdResponseErrorCode.CMD_RESPONSE_SUCCESS, 0)
-            
-            # Check if a frame is what is sent back
-            if start_index != -1:
-                # These are all the bytes from other tasks that are not a part of the frame
-                outer_bytes = read_bytes[:start_index] + read_bytes[end_index + 1 :]
+def receive_cmd_res(command_id: CmdCallbackId, ser: Serial, comms: CommsPipeline, is_timetagged: bool, com_port: str, timeout: int = 0) -> CmdRes:
+    """
+    A function to recieve and part response bytes into a CmdRes
 
-                with open(LOG_PATH, "a") as file:
-                    file.write(str(outer_bytes.decode("utf-8")))
+    :param command: The type of command awaiting a response
+    :param comms: The comms object to be used
+    :param is_timetagged: Whether the command is time tagged or not 
+    :param com_port: The port that the board is connected to (i.e. which port the program should use)
+    :return: A decoded frame if command is valid and has a response else None
+    """
+ 
+    # Await a response (This is set to an arbitrary large amount as the logger and stats collector might
+    # send through data)
+    read_bytes = bytearray(b"")
 
-                # Isolate the frame
-                rcv_frame_bytes = read_bytes[start_index : end_index + 1]
+    counter = 0
+    flags = 0
+        
+    if command_id == CmdCallbackId.CMD_EXEC_OBC_RESET:
+        return CmdRes(CmdCallbackId.CMD_EXEC_OBC_RESET, CmdResponseErrorCode.CMD_RESPONSE_SUCCESS, 0)
 
-                rcv_frame = comms.decode_frame(rcv_frame_bytes)
-                #TODO: Probably need a custom command parser for telem, make this less hacky
-                telemCorrect = True
-                if command.id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
-                    if rcv_frame is not None:
-                        telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
-                        for telemetry in telem:
-                            print(telemetry.id)
-                            print(telemetry.timestamp)
-                            if telemetry.id == 3:
-                                print(telemetry.obcTemp)
-                            else:
-                                print(f"Frame data is none {telemetry.obcState}")
-                                return None
-                        return telem
-                    return None
+    while(flags < 2):
+        byte = ser.read(1)
+        if(byte == b"\x7e"):
+            flags += 1
 
-                # TODO: Handle these return frames
-                if rcv_frame is not None and not is_timetagged:
-                    return parse_command_response(rcv_frame.data[:RS_DECODED_DATA_SIZE])
-                else:
-                    return None
-            elif is_timetagged:
-                print("Command is time tagged, enable and check logs for a response")
-                return None
-            else:
-                # TODO: Handle bootloader recieve
-                return parse_command_response(read_bytes[:RS_DECODED_DATA_SIZE])
-        except Exception as e:
-            if rcv_frame_bytes is not None:
-                print(rcv_frame_bytes)
-            else:
-                print("Did not find frame")
-            print(f"Error: {e}")
+        read_bytes.extend(byte)
+
+        counter += 1
+
+        if counter >= 100000:
+            print("Frame not found within reasonable distance")
             return None
+
+    start_index = read_bytes.find(b"\x7e")
+    end_index = read_bytes.rfind(b"\x7e")
+
+    if end_index - start_index <= 1:
+        print("Frame positioning error. Try again")
+        return None
+
+    rcv_frame_bytes = None
+
+    try:  
+        # Check if a frame is what is sent back
+        if start_index != -1:
+            # These are all the bytes from other tasks that are not a part of the frame
+            outer_bytes = read_bytes[:start_index] + read_bytes[end_index + 1 :]
+
+            with open(LOG_PATH, "a") as file:
+                file.write(str(outer_bytes.decode("utf-8")))
+
+            # Isolate the frame
+            rcv_frame_bytes = read_bytes[start_index : end_index + 1]
+
+            rcv_frame = comms.decode_frame(rcv_frame_bytes)
+            #TODO: Probably need a custom command parser for telem, make this less hacky
+            telemCorrect = True
+            if command_id == CmdCallbackId.CMD_DOWNLINK_TELEM.value:
+                if rcv_frame is not None:
+                    telem, data = unpack_telem(rcv_frame.data[:RS_DECODED_DATA_SIZE])
+                    for telemetry in telem:
+                        print(telemetry.id)
+                        print(telemetry.timestamp)
+                        if telemetry.id == 3:
+                            print(telemetry.obcTemp)
+                        else:
+                            print(f"Frame data is none {telemetry.obcState}")
+                            return None
+                    return telem
+                return None
+
+            # TODO: Handle these return frames
+            if rcv_frame is not None and not is_timetagged:
+                return parse_command_response(rcv_frame.data[:RS_DECODED_DATA_SIZE])
+            else:
+                return None
+        elif is_timetagged:
+            print("Command is time tagged, enable and check logs for a response")
+            return None
+        else:
+            # TODO: Handle bootloader recieve
+            return parse_command_response(read_bytes[:RS_DECODED_DATA_SIZE])
+    except Exception as e:
+        if rcv_frame_bytes is not None:
+            print(rcv_frame_bytes)
+        else:
+            print("Did not find frame")
+        print(f"Error: {e}")
+        return None
 
 
 def send_conn_request(com_port: str, timeout: int = 0) -> Frame:
@@ -150,6 +189,7 @@ def send_conn_request(com_port: str, timeout: int = 0) -> Frame:
         # Encode using AX25, remember these frames don't have data fields so there's no need for fec or aes128
         comms = CommsPipeline()
         send_bytes = comms.encode_frame(None)
+
         ser.write(send_bytes.ljust(30, b"\x00"))
 
         # We wait for an acknowledge from the board
@@ -168,6 +208,116 @@ def send_conn_request(com_port: str, timeout: int = 0) -> Frame:
         rcv_frame_bytes = rcv_frame_bytes[start_index : end_index + 1]
         rcv_frame = comms.decode_frame(rcv_frame_bytes)
         return rcv_frame
+
+def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
+    """
+    A function to uplink apn app image binary, and report success / failure
+    
+    :param args: A string that contains all the arguments the user passed in
+    :param com_port: The port that the board is connected to (i.e. which port the program should use)
+    :return: None at this time
+    """
+
+    parser = parse_bin_uplink()
+
+    arguments = parser.parse_args(args.split())
+
+    app_path = arguments.file 
+    programming_session = 0 if arguments.app_slot == "A" else 0xF4 #TODO Temporary magic num, replace with macro later
+
+    #TODO reflect cmake options  
+    app_starting_address = 0x00040000 if arguments.app_slot == "A" else 0x000A0000 # This is a placeholder, awaiting proper implementation of flags
+
+    app_obj = Path(app_path)
+    app_bin = app_obj.read_bytes()
+
+    commands_needed = ceil(len(app_bin) / COMMAND_DATA_SIZE)
+
+    comms = CommsPipeline()
+
+    # Open serial port and write binary to device via UART
+    with Serial(
+        com_port,
+        baudrate=OBC_UART_BAUD_RATE,
+        parity=PARITY_NONE,
+        stopbits=STOPBITS_TWO,
+        timeout=1,
+    ) as ser:
+
+        command_factories: list[Callable[..., CmdMsg]] = COMMAND_FACTORIES
+
+        # We need to first erase the app slot
+        data = pack_command(command_factories[CmdCallbackId.CMD_OBC_ERASE_APP](
+            programming_session
+        ))
+
+        data = data.ljust(RS_DECODED_DATA_SIZE, b"\x00")
+        
+        send_bytes = comms.encode_frame(data).ljust(_PADDING_REQUIRED, b"\x00")
+            
+        ser.reset_output_buffer()
+        ser.write(send_bytes)
+ 
+        res = receive_cmd_res(CmdCallbackId.CMD_OBC_ERASE_APP, ser, comms, False, com_port, timeout)
+
+        if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+            print(res)
+            print("Failed to erase app slot")
+            return None
+        else:
+            print("Succesfully erased the app!")
+
+        # We create a progress bar with the tqdm library
+        progress_bar = tqdm(
+            desc="Packets Written: ", total=commands_needed, dynamic_ncols=True
+        )
+
+        for i in range(commands_needed - 1):
+            data = pack_command(command_factories[CmdCallbackId.CMD_OBC_WRITE_APP](
+                programming_session,
+                COMMAND_DATA_SIZE,
+                app_starting_address + i * COMMAND_DATA_SIZE,
+            ))
+
+            data = (data + app_bin[i * COMMAND_DATA_SIZE : (i + 1) * COMMAND_DATA_SIZE]).ljust(RS_DECODED_DATA_SIZE, b"\x00")  
+
+            send_bytes = comms.encode_frame(data).ljust(_PADDING_REQUIRED, b"\x00")
+
+            ser.reset_output_buffer()
+            ser.write(send_bytes)
+
+            res = receive_cmd_res(CmdCallbackId.CMD_OBC_WRITE_APP, ser, comms, False, com_port, timeout)
+            if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+                print(res)
+                print("Failed to write app data")
+                return None
+            else:
+                progress_bar.update(1)
+                ser.reset_output_buffer()
+                ser.reset_input_buffer()
+
+        data = pack_command(command_factories[CmdCallbackId.CMD_OBC_WRITE_APP](
+            programming_session,
+            len(app_bin[(commands_needed - 1) * COMMAND_DATA_SIZE:]),
+            app_starting_address + (commands_needed - 1) * COMMAND_DATA_SIZE,
+            ))
+
+        data = (data + app_bin[(commands_needed - 1) * COMMAND_DATA_SIZE :]).ljust(RS_DECODED_DATA_SIZE, b"\x00")
+
+        send_bytes = comms.encode_frame(data).ljust(_PADDING_REQUIRED, b"\x00")
+
+        ser.reset_output_buffer()
+        ser.write(send_bytes)
+        
+        res = receive_cmd_res(CmdCallbackId.CMD_OBC_WRITE_APP, ser, comms, False, com_port, timeout)
+        if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+            print(res)
+            print("Failed to write app data")
+            return None
+        else:
+            print("Successfully wrote app!")
+            progress_bar.update(1)
+            progress_bar.close() 
 
 
 # The following docstrings do not follow convention as their docstrings are used in the CLI for the help command
@@ -198,6 +348,37 @@ def arg_parse() -> ArgumentParser:
         dest="timestamp",
         type=int,
         help="The time stamp for when the command should execute",
+    )
+
+    return parser
+
+def parse_bin_uplink() -> ArgumentParser:
+    """
+    This parser is used specifically for parsing binary uplink requests. 
+    """
+    # We set add_help False here to avoid the child parsers from raising errors.
+    # exit_on_error is also set to False to allow us to handle errors ourselves
+    parser = ArgumentParser(add_help=False, exit_on_error=False)
+    
+    # File Argument
+    parser.add_argument(
+        "-f",
+        "--file",
+        required=True,
+        dest="file",
+        type=str,
+        help="The file path of the app binary",
+    )
+    
+    # App Slot Argument
+    parser.add_argument(
+        "-s",
+        "--slot",
+        required=True,
+        dest="app_slot",
+        type=str,
+        choices=["A", "B"],
+        help="The app slot to flash to",
     )
 
     return parser

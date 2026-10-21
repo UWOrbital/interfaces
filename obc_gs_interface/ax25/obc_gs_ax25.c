@@ -343,25 +343,21 @@ obc_gs_error_code_t ax25Unstuff(uint8_t *packet, uint16_t packetLen, uint8_t *un
       unstuffedBitLength++;
     }
   }
-
+  
   // Let these bits at the end that are 0 and are a result of the unstuffing
   // process
-  uint8_t tailBytes = 0;
+  uint16_t byteCount = 0;
 
-  while (unstuffedPacket[(unstuffedBitLength / 8) - tailBytes] == 0x00 && tailBytes < AX25_INFO_BYTES) {
-    tailBytes++;
-  }
-  // Add last flag to end of the packet, rounding up and removing any 0
-  // bytes at the end as a result of unstuffing
-  if (tailBytes == 0) {
-    unstuffedPacket[(unstuffedBitLength + 7) / 8] = AX25_FLAG;
-    *unstuffedPacketLen = ((unstuffedBitLength + 7) / 8) + 1;
-  } else {
-    unstuffedPacket[(unstuffedBitLength / 8) - tailBytes + 1] = AX25_FLAG;
-    *unstuffedPacketLen = unstuffedBitLength / 8 - tailBytes + 2;
-  }
+  // An unstuffed frame is necessarily a whole number of bytes, so any remaining bits
+  // are padding. 
+  byteCount = (unstuffedBitLength / 8);
 
-  // convert bits to bytes
+  // Overwrite padding bits with AX25_FLAG
+  unstuffedPacket[byteCount] = AX25_FLAG;
+  *unstuffedPacketLen = byteCount + 1;
+
+  // The above implementation is superior to bit stripping as it avoids the 
+  // edge case of the FCS bytes being zeros.
 
   return OBC_GS_ERR_CODE_SUCCESS;
 }

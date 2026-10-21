@@ -1,6 +1,7 @@
 #pragma once
 
 #include "obc_gs_command_id.h"
+#include "magic_numbers.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -21,7 +22,10 @@ typedef struct {
 /* BL Command Data Structures */
 /* -------------------------- */
 // Programming Session Enum
-typedef enum { APPLICATION = 0x00 } programming_session_t;
+typedef enum { 
+  APP_SLOT_A = 0x00,
+  APP_SLOT_B = SHORT_ENABLE_APP_MAGIC_NUMBER, 
+} programming_session_t;
 
 // CMD_DOWNLOAD_DATA
 typedef struct {
@@ -41,16 +45,16 @@ typedef struct {
 /*   Command Message Struct   */
 /* -------------------------- */
 
-typedef struct {
+typedef struct { 
   union {
     rtc_sync_cmd_data_t rtcSync;
     downlink_logs_next_pass_cmd_data_t downlinkLogsNextPass;
     download_data_cmd_data_t downloadData;
     set_programming_session_cmd_data_t setProgrammingSession;
   };
-
+  
   uint32_t timestamp;  // Unix timestamp in seconds
-  bool isTimeTagged;   // If true, command will be executed at timestamp
+  bool isTimeTagged;   // If true, command will be executed at timestamp 
 
   cmd_callback_id_t id;  // Command ID
 } cmd_msg_t;
