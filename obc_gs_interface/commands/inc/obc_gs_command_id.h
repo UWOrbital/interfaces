@@ -53,5 +53,6 @@ typedef enum {
   CMD_ENABLE_BOOT_APP_B,
   CMD_OBC_ERASE_APP,
   CMD_OBC_WRITE_APP,
+  CMD_OBC_WRITE_FCMD,
   NUM_CMD_CALLBACKS,
 } cmd_callback_id_t;

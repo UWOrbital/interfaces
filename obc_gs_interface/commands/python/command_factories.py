@@ -3,9 +3,12 @@ from ctypes import (
     c_uint,
     c_uint16,
     c_uint32,
+    memmove,
+    addressof,
+    sizeof,
 )
 
-from interfaces.obc_gs_interface.commands.python import CmdCallbackId, CmdMsg, ProgrammingSession
+from interfaces.obc_gs_interface.commands.python import CmdCallbackId, CmdMsg, FCmdMsg, ProgrammingSession
 
 # ######################################################################
 # ||                                                                  ||
@@ -55,7 +58,7 @@ def create_cmd_rtc_sync(time: int, unixtime_of_execution: int | None = None) -> 
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_RTC_SYNC
-    cmd_msg.rtcSync.unixTime = c_uint32(time)
+    cmd_msg.data.rtcSync.unixTime = c_uint32(time)
     return cmd_msg
 
 
@@ -73,7 +76,7 @@ def create_cmd_downlink_logs_next_pass(log_level: int, unixtime_of_execution: in
         raise ValueError("Log level passed is too large (cannot be encoded into a c_uint8)")
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_DOWNLINK_LOGS_NEXT_PASS
-    cmd_msg.downlinkLogsNextPass.logLevel = log_level
+    cmd_msg.data.downlinkLogsNextPass.logLevel = log_level
     return cmd_msg
 
 
@@ -147,7 +150,7 @@ def create_cmd_set_programming_session(
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_SET_PROGRAMMING_SESSION
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
+    cmd_msg.data.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
 
@@ -162,7 +165,7 @@ def create_cmd_erase_app(programming_session: ProgrammingSession, unixtime_of_ex
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_ERASE_APP
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
+    cmd_msg.data.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
 
@@ -187,9 +190,9 @@ def create_cmd_download_data(
 
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_DOWNLOAD_DATA
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
-    cmd_msg.downloadData.length = c_uint16(length)
-    cmd_msg.downloadData.address = c_uint32(address)
+    cmd_msg.data.downloadData.programmingSession = c_uint(programming_session)
+    cmd_msg.data.downloadData.length = c_uint16(length)
+    cmd_msg.data.downloadData.address = c_uint32(address)
     return cmd_msg
 
 
@@ -237,6 +240,7 @@ def create_cmd_enable_boot_app_b(unixtime_of_execution: int | None = None) -> Cm
     """
     Function to create a CmdMsg structure for CMD_ENABLE_BOOT_APP_B
 
+
     :param unixtime_of_execution: A time of when to execute a certain event,
                                   by default, it is set to None (i.e. a specific
                                   time is not needed)
@@ -257,7 +261,7 @@ def create_cmd_obc_erase_app(programming_session: ProgrammingSession, unixtime_o
     """
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_OBC_ERASE_APP
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
+    cmd_msg.data.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
 def create_cmd_obc_write_app(
@@ -281,29 +285,40 @@ def create_cmd_obc_write_app(
 
     cmd_msg = CmdMsg(unixtime_of_execution)
     cmd_msg.id = CmdCallbackId.CMD_OBC_WRITE_APP
-    cmd_msg.downloadData.length = c_uint16(length)
-    cmd_msg.downloadData.address = c_uint32(address)
-    cmd_msg.downloadData.programmingSession = c_uint(programming_session)
+    cmd_msg.data.downloadData.length = c_uint16(length)
+    cmd_msg.data.downloadData.address = c_uint32(address)
+    cmd_msg.data.downloadData.programmingSession = c_uint(programming_session)
     return cmd_msg
 
-def create_cmd_obc_downlink_challenge(
-    programming_session: ProgrammingSession, length: int, address: int, unixtime_of_execution: int | None = None
+def create_cmd_obc_write_fcmd(
+    fcmd_msg: CmdMsg, unixtime_of_execution: int | None = None
 ) -> CmdMsg:
     """
-    Function to create a CmdMsg structure for CMD_OBC_DOWNLINK_CHALLENGE
+    Function to create a CmdMsg structure for CMD_OBC_WRITE_FCMD
 
-    :param programming_session: Defines the programming session of the current packet
-    :param length: The length of the data to be downloaded
-    :param address: The address on the board where the data should be written to
+    :param CmdMsg: CmdMsg to be packed into an FCmdMsg. This function DOES NOT
+                   check for if CmdMsg is a nested fcmd_msg. A gaurd clause is 
+                   required in the implementation.
     :param unixtime_of_execution: A time of when to execute a certain event,
                                   by default, it is set to None (i.e. a specific
                                   time is not needed)
-    :return: CmdMsg structure for CMD_OBC_DOWNLINK_CHALLENGE
+    :return: CmdMsg structure for CMD_OBC_WRITE_FCMD
     """
-   
+    # Create outer FCMD command message
     cmd_msg = CmdMsg(unixtime_of_execution)
-    cmd_msg.id = CmdCallbackId.CMD_OBC_DOWNLINK_CHALLENGE
+    cmd_msg.id = CmdCallbackId.CMD_OBC_WRITE_FCMD
+
+    # Cast cmd_msg type to fcmd_msg_t 
+    fcmd_msg_cast = FCmdMsg(fcmd_msg.timestamp)
+    fcmd_msg_cast.isTimeTagged = fcmd_msg.isTimeTagged
+    fcmd_msg_cast.id = fcmd_msg.id
+    memmove(addressof(fcmd_msg_cast.data), addressof(fcmd_msg.data), sizeof(fcmd_msg_cast.data))
+
+    # Append forwarded command message onto the outer one
+    cmd_msg.data.fCmd = fcmd_msg_cast
+
     return cmd_msg
+
 
 COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_end_of_frame,
@@ -323,5 +338,5 @@ COMMAND_FACTORIES: list[Callable[..., CmdMsg]] = [
     create_cmd_enable_boot_app_b,
     create_cmd_obc_erase_app,
     create_cmd_obc_write_app,
-    create_cmd_obc_downlink_challenge,
+    create_cmd_obc_write_fcmd,
 ]

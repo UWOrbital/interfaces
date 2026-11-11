@@ -74,6 +74,7 @@ def send_command(args: str, com_port: str, timeout: int = 0) -> CmdRes | type[Cm
 
         # Send the frames to the board
         ser.write(send_bytes)
+        print(send_bytes)
         print("Frame Sent")
 
         return receive_cmd_res(command.id, ser, comms, is_timetagged, com_port, timeout)
@@ -218,7 +219,7 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
     :return: None at this time
     """
 
-    parser = parse_bin_uplink()
+    parser = parse_uplink_bin()
 
     arguments = parser.parse_args(args.split())
 
@@ -226,7 +227,7 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
     programming_session = 0 if arguments.app_slot == "A" else 0xF4 #TODO Temporary magic num, replace with macro later
 
     #TODO reflect cmake options  
-    app_starting_address = 0x00040000 if arguments.app_slot == "A" else 0x000A0000 # This is a placeholder, awaiting proper implementation of flags
+    app_start_address = 0x00040000 if arguments.app_slot == "A" else 0x000A0000 # This is a placeholder, awaiting proper implementation of flags
 
     app_obj = Path(app_path)
     app_bin = app_obj.read_bytes()
@@ -260,10 +261,10 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
  
         res = receive_cmd_res(CmdCallbackId.CMD_OBC_ERASE_APP, ser, comms, False, com_port, timeout)
 
-        if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+        if res == None or res.error_code != CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
             print(res)
             print("Failed to erase app slot")
-            return None
+            return
         else:
             print("Succesfully erased the app!")
 
@@ -276,7 +277,7 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
             data = pack_command(command_factories[CmdCallbackId.CMD_OBC_WRITE_APP](
                 programming_session,
                 COMMAND_DATA_SIZE,
-                app_starting_address + i * COMMAND_DATA_SIZE,
+                app_start_address + i * COMMAND_DATA_SIZE,
             ))
 
             data = (data + app_bin[i * COMMAND_DATA_SIZE : (i + 1) * COMMAND_DATA_SIZE]).ljust(RS_DECODED_DATA_SIZE, b"\x00")  
@@ -287,10 +288,10 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
             ser.write(send_bytes)
 
             res = receive_cmd_res(CmdCallbackId.CMD_OBC_WRITE_APP, ser, comms, False, com_port, timeout)
-            if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+            if res == None or res.error_code != CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
                 print(res)
                 print("Failed to write app data")
-                return None
+                return
             else:
                 progress_bar.update(1)
                 ser.reset_output_buffer()
@@ -299,7 +300,7 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
         data = pack_command(command_factories[CmdCallbackId.CMD_OBC_WRITE_APP](
             programming_session,
             len(app_bin[(commands_needed - 1) * COMMAND_DATA_SIZE:]),
-            app_starting_address + (commands_needed - 1) * COMMAND_DATA_SIZE,
+            app_start_address + (commands_needed - 1) * COMMAND_DATA_SIZE,
             ))
 
         data = (data + app_bin[(commands_needed - 1) * COMMAND_DATA_SIZE :]).ljust(RS_DECODED_DATA_SIZE, b"\x00")
@@ -310,10 +311,10 @@ def uplink_bin(args: str, com_port: str, timeout: int = 0) -> None:
         ser.write(send_bytes)
         
         res = receive_cmd_res(CmdCallbackId.CMD_OBC_WRITE_APP, ser, comms, False, com_port, timeout)
-        if res == None or not res.error_code == CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
+        if res == None or res.error_code != CmdResponseErrorCode.CMD_RESPONSE_SUCCESS:
             print(res)
             print("Failed to write app data")
-            return None
+            return
         else:
             print("Successfully wrote app!")
             progress_bar.update(1)
@@ -352,7 +353,27 @@ def arg_parse() -> ArgumentParser:
 
     return parser
 
-def parse_bin_uplink() -> ArgumentParser:
+def parse_fcmd() -> ArgumentParser:
+    """
+    This parser is used specifically for parsing fcmd write requests.
+    """
+    # We set add_help False here to avoid the child parsers from raising errors.
+    # exit_on_error is also set to False to allow us to handle errors ourselves
+    parser = SilentArgumentParser(add_help=False, exit_on_error=False)
+
+    # fcmd Argument
+    parser.add_argument(
+        "-fc",
+        "--fCmdFlag",
+        action="store_true",
+        dest="flag",
+        help="The command id for the forwarded command",
+    )
+
+    return parser
+
+
+def parse_uplink_bin() -> ArgumentParser:
     """
     This parser is used specifically for parsing binary uplink requests. 
     """
@@ -447,6 +468,29 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
     # in the CmdCallbackId Enum
     commmand_factories: list[Callable[..., CmdMsg]] = COMMAND_FACTORIES
 
+    # We first handle forwarded command requests
+    command_args, rest = parse_fcmd().parse_known_args(arguments)
+    if command_args.flag:
+
+        # TODO: Add a list of allowed commands for the BL
+
+        try:
+            inner = generate_command(" ".join(rest))
+        except KeyError:
+            print("Unable to pack forwarded command")
+            return None, False
+
+        if inner[1]:
+            print("Timetagged commands are not permitted for the bootloader")
+            return None, False
+
+        if inner[0].id == CmdCallbackId.CMD_OBC_WRITE_FCMD:
+            print("Nested forwarded commands are not permitted")
+            return None, False
+    
+        command = commmand_factories[CmdCallbackId.CMD_OBC_WRITE_FCMD](inner[0])
+        return command, False
+
     # Loop through each of the specific parses and see if we get a valid parse on any of them
     for func in child_parsers:
         try:
@@ -457,10 +501,14 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
 
         # Once we do get a valid parse we try to see if the command is in the list of commands by converting it to
         # the CmdCallbackId Enum
-        try:
+        try:    
             command_enum = CmdCallbackId[command_args.command]
         except KeyError:
             print("Invalid Command")
+            return None, False
+
+        if command_enum == CmdCallbackId.CMD_OBC_WRITE_FCMD:
+            print("Cannot pack CMD_OBC_WRITE_FCMD within ordinary command")
             return None, False
 
         # We check how many arguments are in the parsed object and call functions accordingly.

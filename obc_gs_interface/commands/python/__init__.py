@@ -44,7 +44,12 @@ class DownloadDataCmdData(Structure):
     The python equivalent class for the download_data_cmd_data_t structure in the C implementation
     """
 
-    _fields_ = [("programmingSession", c_uint), ("length", c_uint16), ("address", c_uint32), ("data", POINTER(c_uint8))]
+    _fields_ = [
+        ("programmingSession", c_uint),
+        ("length", c_uint16),
+        ("address", c_uint32),
+        ("data", POINTER(c_uint8)),
+    ]
 
 
 class SetProgrammingSessionCmdData(Structure):
@@ -53,6 +58,53 @@ class SetProgrammingSessionCmdData(Structure):
     """
 
     _fields_ = [("programmingSession", c_uint)]
+
+
+# NOTE: When adding commands only add their data to the following union type as shown with RtcSyncCmdData and
+# DownlinkLogsNextPassCmdData
+class _FU(Union):
+    """
+    Union class needed to create the FCmdMsgType Class
+    """
+
+    _fields_ = [
+        ("rtcSync", RtcSyncCmdData),
+        ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
+        ("downloadData", DownloadDataCmdData),
+        ("setProgrammingSession", SetProgrammingSessionCmdData),
+    ]
+
+
+class FCmdMsg(Structure):
+    """
+    The python equivalent class for the fcmd_msg_t structure in the C implementation
+    NOTE: This class has a union so initialize accordingly
+    """
+
+    _pack_ = 1
+
+    _fields_ = [
+        ("data", _FU),
+        ("timestamp", c_uint32),
+        ("isTimeTagged", c_bool),
+        ("id", c_uint),
+    ]
+
+    def __init__(self, unixtime_of_execution: int | None = None) -> None:
+        """
+        Constructor for the CmdMsg Class
+
+        :param unixtime_of_execution: Can be an integer or None. If None the function will set isTimeTagged to false and
+                                      make the timestamp 0. If an integer is passed in then the function sets
+                                      isTimeTagged to True and timestamp to the integer passed in.
+        """
+        if unixtime_of_execution is None:
+            # NOTE: By default these will be 0-initialized but, just for clarity the values are specified
+            super().__init__(_FU(), c_uint32(0), c_bool(False), c_uint())
+        else:
+            super().__init__(
+                _FU(), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
+            )
 
 
 # NOTE: When adding commands only add their data to the following union type as shown with RtcSyncCmdData and
@@ -67,6 +119,7 @@ class _U(Union):
         ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
         ("downloadData", DownloadDataCmdData),
         ("setProgrammingSession", SetProgrammingSessionCmdData),
+        ("fCmd", FCmdMsg),
     ]
 
 
@@ -76,8 +129,12 @@ class CmdMsg(Structure):
     NOTE: This class has a union so initialize accordingly
     """
 
-    _anonymous_ = ("u",)
-    _fields_ = [("u", _U), ("timestamp", c_uint32), ("isTimeTagged", c_bool), ("id", c_uint)]
+    _fields_ = [
+        ("data", _U),
+        ("timestamp", c_uint32),
+        ("isTimeTagged", c_bool),
+        ("id", c_uint),
+    ]
 
     def __init__(self, unixtime_of_execution: int | None = None) -> None:
         """
@@ -91,7 +148,10 @@ class CmdMsg(Structure):
             # NOTE: By default these will be 0-initialized but, just for clarity the values are specified
             super().__init__(_U(), c_uint32(0), c_bool(False), c_uint())
         else:
-            super().__init__(_U(), c_uint32(unixtime_of_execution), c_bool(True), c_uint())
+            super().__init__(
+                _U(), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
+            )
+
 
 class _TelemU(Union):
     """
@@ -109,27 +169,23 @@ class _TelemU(Union):
         ("solarPanel2Temp", c_float),
         ("solarPanel3Temp", c_float),
         ("solarPanel4Temp", c_float),
-
         ("epsComms5vCurrent", c_float),
         ("epsComms3v3Current", c_float),
         ("epsMagnetorquer8vCurrent", c_float),
         ("epsAdcs5vCurrent", c_float),
         ("epsAdcs3v3Current", c_float),
         ("epsObc3v3Current", c_float),
-
         ("epsComms5vVoltage", c_float),
         ("epsComms3v3Voltage", c_float),
         ("epsMagnetorquer8vVoltage", c_float),
         ("epsAdcs5vVoltage", c_float),
         ("epsAdcs3v3Voltage", c_float),
         ("epsObc3v3Voltage", c_float),
-        
-
         ("obcState", c_uint8),
         ("epsState", c_uint8),
-
         ("numCspPacketsRcvd", c_uint32),
     ]
+
 
 class TelemetryData(Structure):
     """
@@ -140,7 +196,12 @@ class TelemetryData(Structure):
     _anonymous_ = ("u",)
     _fields_ = [("u", _TelemU), ("id", c_uint), ("timestamp", c_uint32)]
 
-interface.unpackCmdMsg.argtypes = (POINTER(c_uint8 * MAX_CMD_MSG_SIZE), POINTER(c_uint32), POINTER(CmdMsg))
+
+interface.unpackCmdMsg.argtypes = (
+    POINTER(c_uint8 * MAX_CMD_MSG_SIZE),
+    POINTER(c_uint32),
+    POINTER(CmdMsg),
+)
 interface.unpackCmdMsg.restype = c_uint
 
 interface.packCmdMsg.argtypes = (
@@ -168,7 +229,10 @@ class CmdResponseHeader(Structure):
     _fields_ = [("cmdId", c_uint), ("errCode", c_uint), ("dataLen", c_uint8)]
 
 
-interface.packCmdResponse.argtypes = (POINTER(CmdResponseHeader), POINTER(c_uint8 * RS_DECODED_DATA_SIZE))
+interface.packCmdResponse.argtypes = (
+    POINTER(CmdResponseHeader),
+    POINTER(c_uint8 * RS_DECODED_DATA_SIZE),
+)
 interface.packCmdResponse.restype = c_uint
 
 interface.unpackCmdResponse.argtypes = (
@@ -179,7 +243,11 @@ interface.unpackCmdResponse.argtypes = (
 interface.unpackCmdResponse.restype = c_uint
 
 
-interface.unpackTelemetry.argtypes = (POINTER(c_uint8 * MAX_CMD_MSG_SIZE), POINTER(c_uint32), POINTER(TelemetryData))
+interface.unpackTelemetry.argtypes = (
+    POINTER(c_uint8 * MAX_CMD_MSG_SIZE),
+    POINTER(c_uint32),
+    POINTER(TelemetryData),
+)
 interface.unpackTelemetry.restype = c_uint
 # ######################################################################
 # ||                                                                  ||
@@ -211,8 +279,9 @@ class CmdCallbackId(IntEnum):
     CMD_ENABLE_BOOT_APP_A = 13
     CMD_ENABLE_BOOT_APP_B = 14
     CMD_OBC_ERASE_APP = 15
-    CMD_OBC_WRITE_APP= 16
-    NUM_CMD_CALLBACKS = 17
+    CMD_OBC_WRITE_APP = 16
+    CMD_OBC_WRITE_FCMD = 17
+    NUM_CMD_CALLBACKS = 18
 
 
 # Path to File: interfaces/obc_gs_interface/commands/obc_gs_commands_response.h
@@ -232,6 +301,7 @@ class ProgrammingSession(IntEnum):
 
     APP_SLOT_A = 0
     APP_SLOT_B = 0xF4
+
 
 class TelemId(IntEnum):
     """
@@ -335,9 +405,13 @@ def unpack_command(cmd_msg_packed: bytes) -> tuple[list[CmdMsg], bytes]:
             break
 
         cmd_msg = CmdMsg()
-        buffer_elements = list(cmd_msg_packed[total_bytes_unpacked : total_bytes_unpacked + 16])
+        buffer_elements = list(
+            cmd_msg_packed[total_bytes_unpacked : total_bytes_unpacked + 16]
+        )
         buff = (c_uint8 * MAX_CMD_MSG_SIZE)(*buffer_elements)
-        res = interface.unpackCmdMsg(pointer(buff), pointer(bytes_unpacked), pointer(cmd_msg))
+        res = interface.unpackCmdMsg(
+            pointer(buff), pointer(bytes_unpacked), pointer(cmd_msg)
+        )
         total_bytes_unpacked += bytes_unpacked.value
         bytes_unpacked = c_uint32(0)
         if res != 0:
@@ -388,17 +462,22 @@ def unpack_command_response(cmd_msg_packed: bytes) -> tuple[CmdResponseHeader, b
     data_buffer = (c_uint8 * RS_DECODED_DATA_SIZE)()
     cmd_msg_response = CmdResponseHeader()
 
-    res = interface.unpackCmdResponse(pointer(buff), pointer(cmd_msg_response), pointer(data_buffer))
+    res = interface.unpackCmdResponse(
+        pointer(buff), pointer(cmd_msg_response), pointer(data_buffer)
+    )
     data_bytes = bytes(data_buffer)
 
     if res != 0:
-        raise ValueError("Could not unpack command response. OBC Error Code: " + str(res))
+        raise ValueError(
+            "Could not unpack command response. OBC Error Code: " + str(res)
+        )
 
     return cmd_msg_response, data_bytes
 
+
 def unpack_telem(telem_packed: bytes) -> tuple[list[TelemetryData], bytes]:
     """
-    This takes in bytes of date to be unpacked into a list of telemtry data (see the C implementation for more on 
+    This takes in bytes of date to be unpacked into a list of telemtry data (see the C implementation for more on
     how that's exactly done)
 
     :param telem_packed: Bytes of an already packed telemtry data packet
@@ -417,9 +496,13 @@ def unpack_telem(telem_packed: bytes) -> tuple[list[TelemetryData], bytes]:
 
         telemetry_data = TelemetryData()
         # TODO: see if this causes crashs when total_bytes_unpacked + 16 > RS_DECODED_DATA_SIZE
-        buffer_elements = list(telem_packed[total_bytes_unpacked : total_bytes_unpacked + MAX_CMD_MSG_SIZE])
+        buffer_elements = list(
+            telem_packed[total_bytes_unpacked : total_bytes_unpacked + MAX_CMD_MSG_SIZE]
+        )
         buff = (c_uint8 * MAX_CMD_MSG_SIZE)(*buffer_elements)
-        res = interface.unpackTelemetry(pointer(buff), pointer(bytes_unpacked), pointer(telemetry_data))
+        res = interface.unpackTelemetry(
+            pointer(buff), pointer(bytes_unpacked), pointer(telemetry_data)
+        )
         total_bytes_unpacked += bytes_unpacked.value
         bytes_unpacked = c_uint32(0)
         if res != 0:

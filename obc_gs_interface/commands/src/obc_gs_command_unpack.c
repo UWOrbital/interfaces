@@ -5,6 +5,7 @@
 #include "obc_gs_errors.h"
 
 #include <stdbool.h>
+#include <string.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -61,8 +62,8 @@ static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cm
 // CMD_OBC_WRITE_APP
 static void unpackObcWriteAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
-// // CMD_OBC_DOWNLINK_CHALLENGE
-// static void unpackObcDownlinkChallengeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
+// CMD_OBC_WRITE_FCMD
+static void unpackObcWriteFCmdCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
 typedef void (*unpack_func_t)(const uint8_t*, uint32_t*, cmd_msg_t*);
 
@@ -83,7 +84,7 @@ static const unpack_func_t unpackFns[] = {
     [CMD_ENABLE_BOOT_APP_B] = unpackEnableBootAppBCmdData,
     [CMD_OBC_ERASE_APP] = unpackObcEraseAppCmdData,
     [CMD_OBC_WRITE_APP] = unpackObcWriteAppCmdData,
-    // [CMD_OBC_DOWNLINK_CHALLENGE] = unpackObcDownlinkChallengeCmdData,
+    [CMD_OBC_WRITE_FCMD] = unpackObcWriteFCmdCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -97,7 +98,7 @@ obc_gs_error_code_t unpackCmdMsg(const uint8_t* buffer, uint32_t* offset, cmd_ms
 
   uint8_t id = unpackUint8(buffer, offset);
 
-  // MSB is 0 if the command is time tagged
+  // MSB is 1 if the command is time tagged
   bool isTimeTagged = (id & 0x80);
 
   // Mask out the MSB
@@ -129,12 +130,12 @@ static void unpackExecObcResetCmdData(const uint8_t* buffer, uint32_t* offset, c
 
 // CMD_RTC_SYNC
 static void unpackRtcSyncCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->rtcSync.unixTime = unpackUint32(buffer, offset);
+  cmdMsg->data.rtcSync.unixTime = unpackUint32(buffer, offset);
 }
 
 // CMD_DOWNLINK_LOGS_NEXT_PASS
 static void unpackDownlinkLogsNextPassCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->downlinkLogsNextPass.logLevel = unpackUint8(buffer, offset);
+  cmdMsg->data.downlinkLogsNextPass.logLevel = unpackUint8(buffer, offset);
 }
 
 // CMD_MICRO_SD_FORMAT
@@ -159,21 +160,21 @@ static void unpackUplinkDisconnectCmdData(const uint8_t* buffer, uint32_t* offse
 
 // CMD_SET_PROGRAMMING_SESSION
 static void unpackSetProgrammingSessionCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->setProgrammingSession.programmingSession = unpackUint8(buffer, offset);
+  cmdMsg->data.setProgrammingSession.programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_DOWNLOAD_DATA
 static void unpackDownloadDataCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->downloadData.programmingSession = unpackUint8(buffer, offset);
-  cmdMsg->downloadData.length = unpackUint16(buffer, offset);
-  cmdMsg->downloadData.address = unpackUint32(buffer, offset);
+  cmdMsg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  cmdMsg->data.downloadData.length = unpackUint16(buffer, offset);
+  cmdMsg->data.downloadData.address = unpackUint32(buffer, offset);
   // Typecast necessary to avoid the const pointer to pointer conversion warning
-  cmdMsg->downloadData.data = (uint8_t*)buffer + *offset;
+  cmdMsg->data.downloadData.data = (uint8_t*)buffer + *offset;
 }
 
 // CMD_ERASE_APP
 static void unpackEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->downloadData.programmingSession = unpackUint8(buffer, offset);
+  cmdMsg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_VERIFY_CRC
@@ -198,18 +199,36 @@ static void unpackEnableBootAppBCmdData(const uint8_t* buffer, uint32_t* offset,
 
 // CMD_OBC_ERASE_APP
 static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
-  msg->downloadData.programmingSession = unpackUint8(buffer, offset);
+  msg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_OBC_WRITE_APP
 static void unpackObcWriteAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
-  msg->downloadData.programmingSession = unpackUint8(buffer, offset);
-  msg->downloadData.length = unpackUint16(buffer, offset);
-  msg->downloadData.address = unpackUint32(buffer, offset);
+  msg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  msg->data.downloadData.length = unpackUint16(buffer, offset);
+  msg->data.downloadData.address = unpackUint32(buffer, offset);
   // Typecast necessary to avoid the const pointer to pointer conversion warning
-  msg->downloadData.data = (uint8_t*)buffer + *offset;
+  msg->data.downloadData.data = (uint8_t*)buffer + *offset;
 }
 
-// // CMD_OBC_DOWNLINK_CHALLENGE
-// static void unpackObcDownlinkChallenge(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) { 
-// }
+// CMD_OBC_WRITE_FCMD
+static void unpackObcWriteFCmdCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
+  cmd_msg_t unpackBuffer = {0};
+
+  unpackCmdMsg(buffer, offset, &unpackBuffer);
+
+  fcmd_msg_t fCmdMsgCast = {0};
+
+  // Un-cast cmd to fcmd
+  fCmdMsgCast.id = unpackBuffer.id;
+  fCmdMsgCast.isTimeTagged = unpackBuffer.isTimeTagged;
+  fCmdMsgCast.timestamp = unpackBuffer.timestamp;
+
+  uint8_t emptyString[sizeof(fCmdMsgCast.data)] = {0};
+
+  memcpy(&fCmdMsgCast.data, &emptyString, sizeof(fCmdMsgCast.data));
+  memcpy(&fCmdMsgCast.data, &unpackBuffer.data.fCmd.data, sizeof(fCmdMsgCast.data));
+
+  // Place unpacked fcmd into cmd msg
+  msg->data.fCmd = fCmdMsgCast;
+}
