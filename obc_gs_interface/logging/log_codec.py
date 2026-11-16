@@ -90,7 +90,8 @@ def encode_log_entry(entry: LogEntry) -> bytes:
     if not 0 <= entry.level < len(LEVEL_NAMES):
         raise LogCodecError(f"Invalid log level: {entry.level}")
 
-    flags = entry.level
+    flags = 0
+    flags |= entry.level
     if entry.is_msg:
         flags |= FLAG_TYPE_MSG
     if entry.timestamp is not None:
