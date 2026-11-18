@@ -32,9 +32,6 @@ static void packDownlinkTelemCmdData(uint8_t* buffer, uint32_t* offset, const cm
 // CMD_UPLINK_DISC
 static void packUplinkDisconnectCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
-// CMD_SET_PROGRAMMING_SESSION
-static void packSetProgrammingSessionCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
-
 // CMD_DOWNLOAD_DATA
 static void packDownloadDataCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
@@ -49,9 +46,6 @@ static void packI2CProbeCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg
 
 // CMD_ENABLE_BOOT_APP_A
 static void packEnableBootAppACmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
-
-// CMD_ENABLE_BOOT_APP_B
-static void packEnableBootAppBCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
 
 // CMD_OBC_ERASE_APP
 static void packObcEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg);
@@ -72,13 +66,11 @@ static const pack_func_t packFns[] = {
     [CMD_PING] = packPingCmdData,
     [CMD_DOWNLINK_TELEM] = packDownlinkTelemCmdData,
     [CMD_UPLINK_DISC] = packUplinkDisconnectCmdData,
-    [CMD_SET_PROGRAMMING_SESSION] = packSetProgrammingSessionCmdData,
     [CMD_DOWNLOAD_DATA] = packDownloadDataCmdData,
     [CMD_ERASE_APP] = packEraseAppCmdData,
     [CMD_VERIFY_CRC] = packVerifyCrcCmdData,
     [CMD_I2C_PROBE] = packI2CProbeCmdData,
     [CMD_ENABLE_BOOT_APP_A] = packEnableBootAppACmdData,
-    [CMD_ENABLE_BOOT_APP_B] = packEnableBootAppBCmdData,
     [CMD_OBC_ERASE_APP] = packObcEraseAppCmdData,
     [CMD_OBC_WRITE_APP] = packObcWriteAppCmdData,
     [CMD_OBC_WRITE_FCMD] = packObcWriteFCmdCmdData,
@@ -148,21 +140,16 @@ static void packUplinkDisconnectCmdData(uint8_t* buffer, uint32_t* offset, const
   // No data to pack
 }
 
-// CMD_SET_PROGRAMMING_SESSION
-static void packSetProgrammingSessionCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* cmdMsg) {
-  packUint8((uint8_t)cmdMsg->data.downloadData.programmingSession, buffer, offset);
-}
-
 // CMD_DOWNLOAD_DATA
 static void packDownloadDataCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* cmdMsg) {
-  packUint8((uint8_t)cmdMsg->data.downloadData.programmingSession, buffer, offset);
+  packUint8((uint8_t)cmdMsg->programmingSession, buffer, offset);
   packUint16(cmdMsg->data.downloadData.length, buffer, offset);
   packUint32(cmdMsg->data.downloadData.address, buffer, offset);
 }
 
 // CMD_ERASE_APP
 static void packEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* cmdMsg) {
-  packUint8((uint8_t)cmdMsg->data.downloadData.programmingSession, buffer, offset);
+  packUint8((uint8_t)cmdMsg->programmingSession, buffer, offset);
 }
 
 // CMD_VERIFY_CRC
@@ -180,19 +167,14 @@ static void packEnableBootAppACmdData(uint8_t* buffer, uint32_t* offset, const c
   // No data to pack
 }
 
-// CMD_ENABLE_BOOT_APP_B
-static void packEnableBootAppBCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
-  // No data to pack
-}
-
 // CMD_OBC_ERASE_APP
 static void packObcEraseAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
-  packUint8((uint8_t)msg->data.downloadData.programmingSession, buffer, offset);
+  packUint8((uint8_t)msg->programmingSession, buffer, offset);
 }
 
 // CMD_OBC_WRITE_APP
 static void packObcWriteAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
-  packUint8((uint8_t)msg->data.downloadData.programmingSession, buffer, offset);
+  packUint8((uint8_t)msg->programmingSession, buffer, offset);
   packUint16(msg->data.downloadData.length, buffer, offset);
   packUint32(msg->data.downloadData.address, buffer, offset);
 }
@@ -207,6 +189,7 @@ static void packObcWriteFCmdCmdData(uint8_t* buffer, uint32_t* offset, const cmd
   cmdMsgCast.id = msg->data.fCmd.id;
   cmdMsgCast.isTimeTagged = msg->data.fCmd.isTimeTagged;
   cmdMsgCast.timestamp = msg->data.fCmd.timestamp;
+  cmdMsgCast.programmingSession = msg->data.fCmd.programmingSession;
 
   uint8_t emptyString[sizeof(cmdMsgCast.data)] = {0};
 

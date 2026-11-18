@@ -466,7 +466,7 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
     # A list of Command factories for all commands
     # NOTE: Update these when a command is added and make sure to keep them in the order that the commands are described
     # in the CmdCallbackId Enum
-    commmand_factories: list[Callable[..., CmdMsg]] = COMMAND_FACTORIES
+    command_factories: list[Callable[..., CmdMsg]] = COMMAND_FACTORIES
 
     # We first handle forwarded command requests
     command_args, rest = parse_fcmd().parse_known_args(arguments)
@@ -476,9 +476,14 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
 
         try:
             inner = generate_command(" ".join(rest))
+        
+            if inner[0] == None:
+                print("Forwarded command does not exists")
+                return None, False
         except KeyError:
             print("Unable to pack forwarded command")
             return None, False
+
 
         if inner[1]:
             print("Timetagged commands are not permitted for the bootloader")
@@ -488,7 +493,7 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
             print("Nested forwarded commands are not permitted")
             return None, False
     
-        command = commmand_factories[CmdCallbackId.CMD_OBC_WRITE_FCMD](inner[0])
+        command = command_factories[CmdCallbackId.CMD_OBC_WRITE_FCMD](inner[0])
         return command, False
 
     # Loop through each of the specific parses and see if we get a valid parse on any of them
@@ -515,18 +520,18 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
         # This is the reason why it's important to use the arg1, arg2, arg3 naming convention when creating
         # specific parsers
         if hasattr(command_args, "arg3"):
-            # This line is just accessing a function in the commmand_factories list and passing in arguments
+            # This line is just accessing a function in the command_factories list and passing in arguments
             # via brackets
             # This line also shows why the order is important of the functions in that list
-            command = commmand_factories[command_enum.value](
+            command = command_factories[command_enum.value](
                 command_args.arg1, command_args.arg2, command_args.arg3, command_args.timestamp
             )
         elif hasattr(command_args, "arg2"):
-            command = commmand_factories[command_enum.value](
+            command = command_factories[command_enum.value](
                 command_args.arg1, command_args.arg2, command_args.timestamp
             )
         elif hasattr(command_args, "arg1"):
-            command = commmand_factories[command_enum.value](command_args.arg1, command_args.timestamp)
+            command = command_factories[command_enum.value](command_args.arg1, command_args.timestamp)
 
         if command_args.timestamp is not None and command_args.timestamp > 0:
             is_timetagged = True
@@ -547,7 +552,7 @@ def generate_command(args: str) -> tuple[CmdMsg | None, bool]:
         print("Invalid Command")
         return None, False
 
-    command = commmand_factories[command_enum.value](command_args.timestamp)
+    command = command_factories[command_enum.value](command_args.timestamp)
 
     if command_args.timestamp is not None and command_args.timestamp > 0:
         is_timetagged = True

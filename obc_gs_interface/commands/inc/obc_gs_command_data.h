@@ -33,17 +33,11 @@ typedef enum {
 
 // CMD_DOWNLOAD_DATA
 typedef struct {
-  programming_session_t programmingSession;
   uint16_t length;
   uint32_t address;
   // Defined as a pointer to avoid packing
   uint8_t *data;
 } download_data_cmd_data_t;
-
-// CMD_SET_PROGRAMMING_SESSION
-typedef struct {
-  programming_session_t programmingSession;
-} set_programming_session_cmd_data_t;
 
 /* -------------------------- */
 /*   Command Message Struct   */
@@ -56,8 +50,9 @@ typedef struct __attribute__((packed)) {
     rtc_sync_cmd_data_t rtcSync;
     downlink_logs_next_pass_cmd_data_t downlinkLogsNextPass;
     download_data_cmd_data_t downloadData;
-    set_programming_session_cmd_data_t setProgrammingSession;
   } data;
+
+  programming_session_t programmingSession;
 
   uint32_t timestamp;  // Unix timestamp in seconds
   bool isTimeTagged;   // If true, command will be executed at timestamp
@@ -70,9 +65,10 @@ typedef struct {
     rtc_sync_cmd_data_t rtcSync;
     downlink_logs_next_pass_cmd_data_t downlinkLogsNextPass;
     download_data_cmd_data_t downloadData;
-    set_programming_session_cmd_data_t setProgrammingSession;
     fcmd_msg_t fCmd;
   } data;
+  
+  programming_session_t programmingSession;
 
   uint32_t timestamp;  // Unix timestamp in seconds
   bool isTimeTagged;   // If true, command will be executed at timestamp

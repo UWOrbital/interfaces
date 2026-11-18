@@ -52,14 +52,6 @@ class DownloadDataCmdData(Structure):
     ]
 
 
-class SetProgrammingSessionCmdData(Structure):
-    """
-    The python equivalent class for the set_programming_session_cmd_data_t structure in the C implementation
-    """
-
-    _fields_ = [("programmingSession", c_uint)]
-
-
 # NOTE: When adding commands only add their data to the following union type as shown with RtcSyncCmdData and
 # DownlinkLogsNextPassCmdData
 class _FU(Union):
@@ -71,7 +63,6 @@ class _FU(Union):
         ("rtcSync", RtcSyncCmdData),
         ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
         ("downloadData", DownloadDataCmdData),
-        ("setProgrammingSession", SetProgrammingSessionCmdData),
     ]
 
 
@@ -85,6 +76,7 @@ class FCmdMsg(Structure):
 
     _fields_ = [
         ("data", _FU),
+        ("programmingSession", c_uint8),
         ("timestamp", c_uint32),
         ("isTimeTagged", c_bool),
         ("id", c_uint),
@@ -100,10 +92,10 @@ class FCmdMsg(Structure):
         """
         if unixtime_of_execution is None:
             # NOTE: By default these will be 0-initialized but, just for clarity the values are specified
-            super().__init__(_FU(), c_uint32(0), c_bool(False), c_uint())
+            super().__init__(_FU(), c_uint8(0xF4), c_uint32(0), c_bool(False), c_uint())
         else:
             super().__init__(
-                _FU(), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
+                _FU(), c_uint8(0xF4), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
             )
 
 
@@ -118,7 +110,6 @@ class _U(Union):
         ("rtcSync", RtcSyncCmdData),
         ("downlinkLogsNextPass", DownlinkLogsNextPassCmdData),
         ("downloadData", DownloadDataCmdData),
-        ("setProgrammingSession", SetProgrammingSessionCmdData),
         ("fCmd", FCmdMsg),
     ]
 
@@ -131,6 +122,7 @@ class CmdMsg(Structure):
 
     _fields_ = [
         ("data", _U),
+        ("programmingSession", c_uint8),
         ("timestamp", c_uint32),
         ("isTimeTagged", c_bool),
         ("id", c_uint),
@@ -146,10 +138,10 @@ class CmdMsg(Structure):
         """
         if unixtime_of_execution is None:
             # NOTE: By default these will be 0-initialized but, just for clarity the values are specified
-            super().__init__(_U(), c_uint32(0), c_bool(False), c_uint())
+            super().__init__(_U(), c_uint8(0xF4), c_uint32(0), c_bool(False), c_uint())
         else:
             super().__init__(
-                _U(), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
+                _U(), c_uint8(0xF4), c_uint32(unixtime_of_execution), c_bool(True), c_uint()
             )
 
 
@@ -271,17 +263,15 @@ class CmdCallbackId(IntEnum):
     CMD_PING = 5
     CMD_DOWNLINK_TELEM = 6
     CMD_UPLINK_DISC = 7
-    CMD_SET_PROGRAMMING_SESSION = 8
-    CMD_ERASE_APP = 9
-    CMD_DOWNLOAD_DATA = 10
-    CMD_VERIFY_CRC = 11
-    CMD_I2C_PROBE = 12
-    CMD_ENABLE_BOOT_APP_A = 13
-    CMD_ENABLE_BOOT_APP_B = 14
-    CMD_OBC_ERASE_APP = 15
-    CMD_OBC_WRITE_APP = 16
-    CMD_OBC_WRITE_FCMD = 17
-    NUM_CMD_CALLBACKS = 18
+    CMD_ERASE_APP = 8
+    CMD_DOWNLOAD_DATA = 9
+    CMD_VERIFY_CRC = 10
+    CMD_I2C_PROBE = 11
+    CMD_ENABLE_BOOT_APP_A = 12
+    CMD_OBC_ERASE_APP = 13
+    CMD_OBC_WRITE_APP = 14
+    CMD_OBC_WRITE_FCMD = 15
+    NUM_CMD_CALLBACKS = 16
 
 
 # Path to File: interfaces/obc_gs_interface/commands/obc_gs_commands_response.h

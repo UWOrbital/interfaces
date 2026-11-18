@@ -32,12 +32,6 @@ static void unpackDownlinkTelemCmdData(const uint8_t* buffer, uint32_t* offset, 
 // CMD_UPLINK_DISC
 static void unpackUplinkDisconnectCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
-// CMD_SET_PROGRAMMING_SESSION
-static void unpackSetProgrammingSessionCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
-
-// CMD_SET_PROGRAMMING_SESSION
-static void unpackSetProgrammingSessionCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
-
 // CMD_DOWNLOAD_DATA
 static void unpackDownloadDataCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
@@ -52,9 +46,6 @@ static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_m
 
 // CMD_ENABLE_BOOT_APP_A
 static void unpackEnableBootAppACmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg);
-
-// CMD_ENABLE_BOOT_APP_B
-static void unpackEnableBootAppBCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg);
 
 // CMD_OBC_ERASE_APP
 static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
@@ -75,13 +66,11 @@ static const unpack_func_t unpackFns[] = {
     [CMD_PING] = unpackPingCmdData,
     [CMD_DOWNLINK_TELEM] = unpackDownlinkTelemCmdData,
     [CMD_UPLINK_DISC] = unpackUplinkDisconnectCmdData,
-    [CMD_SET_PROGRAMMING_SESSION] = unpackSetProgrammingSessionCmdData,
     [CMD_DOWNLOAD_DATA] = unpackDownloadDataCmdData,
     [CMD_ERASE_APP] = unpackEraseAppCmdData,
     [CMD_VERIFY_CRC] = unpackVerifyCrcCmdData,
     [CMD_I2C_PROBE] = unpackI2CProbeCmdData,
     [CMD_ENABLE_BOOT_APP_A] = unpackEnableBootAppACmdData,
-    [CMD_ENABLE_BOOT_APP_B] = unpackEnableBootAppBCmdData,
     [CMD_OBC_ERASE_APP] = unpackObcEraseAppCmdData,
     [CMD_OBC_WRITE_APP] = unpackObcWriteAppCmdData,
     [CMD_OBC_WRITE_FCMD] = unpackObcWriteFCmdCmdData,
@@ -158,14 +147,9 @@ static void unpackUplinkDisconnectCmdData(const uint8_t* buffer, uint32_t* offse
   // No data to unpack
 }
 
-// CMD_SET_PROGRAMMING_SESSION
-static void unpackSetProgrammingSessionCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->data.setProgrammingSession.programmingSession = unpackUint8(buffer, offset);
-}
-
 // CMD_DOWNLOAD_DATA
 static void unpackDownloadDataCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  cmdMsg->programmingSession = unpackUint8(buffer, offset);
   cmdMsg->data.downloadData.length = unpackUint16(buffer, offset);
   cmdMsg->data.downloadData.address = unpackUint32(buffer, offset);
   // Typecast necessary to avoid the const pointer to pointer conversion warning
@@ -174,7 +158,7 @@ static void unpackDownloadDataCmdData(const uint8_t* buffer, uint32_t* offset, c
 
 // CMD_ERASE_APP
 static void unpackEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  cmdMsg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  cmdMsg->programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_VERIFY_CRC
@@ -192,19 +176,14 @@ static void unpackEnableBootAppACmdData(const uint8_t* buffer, uint32_t* offset,
   // No data to unpack
 }
 
-// CMD_ENABLE_BOOT_APP_B
-static void unpackEnableBootAppBCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
-  // No data to unpack
-}
-
 // CMD_OBC_ERASE_APP
 static void unpackObcEraseAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
-  msg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  msg->programmingSession = unpackUint8(buffer, offset);
 }
 
 // CMD_OBC_WRITE_APP
 static void unpackObcWriteAppCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg) {
-  msg->data.downloadData.programmingSession = unpackUint8(buffer, offset);
+  msg->programmingSession = unpackUint8(buffer, offset);
   msg->data.downloadData.length = unpackUint16(buffer, offset);
   msg->data.downloadData.address = unpackUint32(buffer, offset);
   // Typecast necessary to avoid the const pointer to pointer conversion warning
@@ -223,6 +202,7 @@ static void unpackObcWriteFCmdCmdData(const uint8_t* buffer, uint32_t* offset, c
   fCmdMsgCast.id = unpackBuffer.id;
   fCmdMsgCast.isTimeTagged = unpackBuffer.isTimeTagged;
   fCmdMsgCast.timestamp = unpackBuffer.timestamp;
+  fCmdMsgCast.programmingSession = unpackBuffer.programmingSession;
 
   uint8_t emptyString[sizeof(fCmdMsgCast.data)] = {0};
 
