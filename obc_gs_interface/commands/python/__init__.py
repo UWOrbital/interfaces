@@ -138,7 +138,7 @@ class CmdMsg(Structure):
         """
         if unixtime_of_execution is None:
             # NOTE: By default these will be 0-initialized but, just for clarity the values are specified
-            super().__init__(_U(), c_uint8(0xF4), c_uint32(0), c_bool(False), c_uint())
+            super().__init__(_U(), c_uint8(0xF4), c_uint32(0), c_bool(False), c_uint()) 
         else:
             super().__init__(
                 _U(), c_uint8(0xF4), c_uint32(unixtime_of_execution), c_bool(True), c_uint()

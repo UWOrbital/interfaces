@@ -179,6 +179,8 @@ static void packObcWriteAppCmdData(uint8_t* buffer, uint32_t* offset, const cmd_
   packUint32(msg->data.downloadData.address, buffer, offset);
 }
 
+// Note: no check from calling this with a fcmd as the forwarded command, must be 
+// added somewhere
 // CMD_OBC_WRITE_FCMD
 static void packObcWriteFCmdCmdData(uint8_t* buffer, uint32_t* offset, const cmd_msg_t* msg) {
   uint8_t numPacked = 0;  // Throwaway variable to satisfy packCmdMsg function
