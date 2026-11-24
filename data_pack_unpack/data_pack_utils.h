@@ -1,5 +1,7 @@
 #pragma once
 
+#include "obc_gs_errors.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -69,6 +71,20 @@ void packInt32(int32_t value, uint8_t* buffer, uint32_t* offset);
  * @param offset  A pointer to the offset within the buffer to pack the value at.
  */
 void packFloat(float value, uint8_t* buffer, uint32_t* offset);
+
+/**
+ * Pack a 16-bit unsigned integer in little-endian byte order.
+ * The caller must provide a buffer with at least 2 bytes.
+ * @return OBC_GS_ERR_CODE_INVALID_ARG if any pointer is NULL; otherwise SUCCESS.
+ */
+obc_gs_error_code_t packUint16LE(uint8_t* buf, uint16_t val);
+
+/**
+ * Pack a 32-bit unsigned integer in little-endian byte order.
+ * The caller must provide a buffer with at least 4 bytes.
+ * @return OBC_GS_ERR_CODE_INVALID_ARG if any pointer is NULL; otherwise SUCCESS.
+ */
+obc_gs_error_code_t packUint32LE(uint8_t* buf, uint32_t val);
 
 #ifdef __cplusplus
 }

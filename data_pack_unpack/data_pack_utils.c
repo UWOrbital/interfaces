@@ -48,3 +48,25 @@ void packFloat(float value, uint8_t* buffer, uint32_t* offset) {
   memcpy(&tmp, &value, sizeof(tmp));
   packUint32(tmp, buffer, offset);
 }
+
+obc_gs_error_code_t packUint16LE(uint8_t* buf, uint16_t val) {
+  if (buf == NULL) {
+    return OBC_GS_ERR_CODE_INVALID_ARG;
+  }
+
+  buf[0] = (uint8_t)((val >> 0) & 0xFFU);
+  buf[1] = (uint8_t)((val >> 8) & 0xFFU);
+  return OBC_GS_ERR_CODE_SUCCESS;
+}
+
+obc_gs_error_code_t packUint32LE(uint8_t* buf, uint32_t val) {
+  if (buf == NULL) {
+    return OBC_GS_ERR_CODE_INVALID_ARG;
+  }
+
+  buf[0] = (uint8_t)((val >> 0) & 0xFFU);
+  buf[1] = (uint8_t)((val >> 8) & 0xFFU);
+  buf[2] = (uint8_t)((val >> 16) & 0xFFU);
+  buf[3] = (uint8_t)((val >> 24) & 0xFFU);
+  return OBC_GS_ERR_CODE_SUCCESS;
+}
