@@ -49,6 +49,9 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 // CMD_I2C_PROBE
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* msg);
 
+// CMD_CAPTURE_IMAGE
+
+static void unpackCaptureImageCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg);
 typedef void (*unpack_func_t)(const uint8_t*, uint32_t*, cmd_msg_t*);
 
 static const unpack_func_t unpackFns[] = {
@@ -64,6 +67,7 @@ static const unpack_func_t unpackFns[] = {
     [CMD_ERASE_APP] = unpackEraseAppCmdData,
     [CMD_VERIFY_CRC] = unpackVerifyCrcCmdData,
     [CMD_I2C_PROBE] = unpackI2CProbeCmdData,
+    [CMD_CAPTURE_IMAGE] = unpackCaptureImageCmdData,
     // Add more functions for other commands as needed
 };
 
@@ -163,5 +167,10 @@ static void unpackVerifyCrcCmdData(const uint8_t* buffer, uint32_t* offset, cmd_
 
 // CMD_I2C_PROBE
 static void unpackI2CProbeCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
+  // No data to unpack
+}
+
+// CMD_CAPTURE_IMAGE
+static void unpackCaptureImageCmdData(const uint8_t* buffer, uint32_t* offset, cmd_msg_t* cmdMsg) {
   // No data to unpack
 }
